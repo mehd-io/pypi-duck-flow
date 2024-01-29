@@ -1,0 +1,14 @@
+# ignore basic python artifacts
+.env
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+# ignore duckdb
+*.duckdb
+*.wal
+
+# devtools
+.ruff_cache
+.pytest_cache
+
+

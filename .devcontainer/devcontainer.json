@@ -1,0 +1,35 @@
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+	"name": "Python 3",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": { 
+			// Options arm64 or amd64
+			"PLATFORM": "amd64" 
+		}
+	},
+
+	"mounts": [
+		"source=${localEnv:HOME}/.config/gcloud,target=/root/.config/gcloud,type=bind",
+		"source=${localEnv:HOME}/.aws,target=/root/.aws,type=bind"
+	],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand":"poetry config virtualenvs.create false && poetry install",
+
+	// Configure tool-specific properties.
+	// "customizations": {},
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	"remoteUser": "root",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"GitHub.copilot",
+				"GitHub.copilot-chat",
+				"ms-python.python"
+			]
+		}
+	}
+}
