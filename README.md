@@ -1,9 +1,9 @@
 # Pypi Duck Flow : Get insights of your python project 🐍
 
-This project is a collections of pipelines to get insights of your python project. It also serves as educational purpose to learn how to build data pipelines with Python, SQL & DuckDB.
+This project is a collections of pipelines to get insights of your python project. It also serves as educational purpose (YouTube videos and blogs) to learn how to build data pipelines with Python, SQL & DuckDB.
 
-The project is composed of 3 parts :
-- ingestion
+The project is composed of series in 3 parts :
+- Ingestion ([YouTube video](https://youtu.be/3pLKTmdWDXk?si=ZI9fjoGQ7hHzznOZ))
 - transformation (TODO)
 - visualization (TODO)
 
