@@ -33,7 +33,6 @@ def main(params: PypiJobParameters):
         conn.sql(f"COPY {params.table_name} TO '{params.table_name}.csv';")
 
     if "s3" in params.destination:
-        # install_extensions(conn, params.extensions)
         load_aws_credentials(conn, params.aws_profile)
         write_to_s3_from_duckdb(
             conn, f"{params.table_name}", params.s3_path, "timestamp"

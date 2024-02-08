@@ -13,12 +13,6 @@ def create_table_from_dataframe(duckdb_con, table_name: str, dataframe: str):
     )
 
 
-def install_extensions(duckdb_con, extensions: List[str]):
-    for ext in extensions:
-        duckdb_con.install_extension(ext)
-        duckdb_con.load_extension(ext)
-
-
 def connect_to_md(duckdb_con, motherduck_token: str):
     duckdb_con.sql(f"INSTALL md;")
     duckdb_con.sql(f"LOAD md;")
