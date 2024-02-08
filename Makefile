@@ -16,6 +16,9 @@ pypi-ingest:
 		--destination $$DESTINATION
 
 ## Development
+install: 
+	poetry install
+
 format:
 	ruff format . 
 

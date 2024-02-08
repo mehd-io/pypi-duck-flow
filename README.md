@@ -1,6 +1,6 @@
 # Pypi Duck Flow : Get insights of your python project 🐍
 
-This project is a collections of pipelines to get insights of your python project. It also serves as educational purpose (YouTube videos and blogs) to learn how to build data pipelines with Python, SQL & DuckDB.
+This project is a collections of pipelines to get insights of your python project. It also serves as educational purpose (YouTube videos and blogs) to learn how to build data pipelines with **Python**, **SQL** & **DuckDB**.
 
 The project is composed of series in 3 parts :
 - Ingestion ([YouTube video](https://youtu.be/3pLKTmdWDXk?si=ZI9fjoGQ7hHzznOZ))
@@ -11,7 +11,10 @@ The project is composed of series in 3 parts :
 
 ### Setup
 
-The project requires Python 3.11 and poetry for dependency management.
+The project requires :
+* Python 3.11
+* Poetry for dependency management.
+
 There's also a [devcontainer](https://code.visualstudio.com/docs/devcontainers/containers) for VSCode.
 Finally a `Makefile` is available to run common tasks.
 
@@ -41,5 +44,6 @@ DESTINATION=local,s3,md # destinations to push data to, can be one or more
 - [MotherDuck account](https://app.motherduck.com/) (optional to push data to MotherDuck)
 
 ### Run
-Once you fill your `.env` file, you can simply use the make command : 
-`make pypi-ingest`
+Once you fill your `.env` file, do the following :
+* `make install` : to install the dependencies
+* `make pypi-ingest` : to run the ingestion pipeline
