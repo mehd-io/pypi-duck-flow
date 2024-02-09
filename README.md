@@ -7,6 +7,10 @@ The project is composed of series in 3 parts :
 - transformation (TODO)
 - visualization (TODO)
 
+## High level architecture
+![High level architecture](./docs/etl_architecture.png)
+
+
 ## Development
 
 ### Setup
