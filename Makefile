@@ -1,7 +1,9 @@
 include .env
 export
 
-.PHONY : help pypi-ingest format test aws-sso-creds
+DBT_FOLDER = transform/pypi_metrics/
+
+.PHONY : help pypi-ingest format test aws-sso-creds pypi-transform
 
 pypi-ingest: 
 	poetry run python3 -m ingestion.pipeline \
@@ -14,6 +16,11 @@ pypi-ingest:
 		--gcp_project $$GCP_PROJECT \
 		--timestamp_column $$TIMESTAMP_COLUMN \
 		--destination $$DESTINATION
+
+pypi-transform:
+	dbt run \
+		--project-dir $$DBT_FOLDER \
+		--vars '{"start_date": "$$START_DATE", "end_date": "$$END_DATE"}'
 
 ## Development
 install: 

@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: external_source
+    meta:
+      external_location: s3://tmp-mehdio/pypi_file_downloads/*/*/*.parquet
+    tables:
+      - name: pypi_file_downloads
+
+

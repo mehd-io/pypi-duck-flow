@@ -11,4 +11,7 @@
 .ruff_cache
 .pytest_cache
 
-
+# dbt
+target/
+dbt_packages/
+logs/
