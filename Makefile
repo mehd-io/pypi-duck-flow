@@ -2,6 +2,7 @@ include .env
 export
 
 DBT_FOLDER = transform/pypi_metrics/
+DBT_TARGET = dev
 
 .PHONY : help pypi-ingest format test aws-sso-creds pypi-transform
 
@@ -19,6 +20,7 @@ pypi-ingest:
 
 pypi-transform:
 	dbt run \
+		--target $$DBT_TARGET \
 		--project-dir $$DBT_FOLDER \
 		--vars '{"start_date": "$$START_DATE", "end_date": "$$END_DATE"}'
 
