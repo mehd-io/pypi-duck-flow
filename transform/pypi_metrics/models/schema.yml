@@ -1,6 +1,5 @@
-
 version: 2
 
 models:
-  - name: pypi_daily_stats.
+  - name: pypi_daily_stats
     description: "Daily downloads of a package from PyPI"
