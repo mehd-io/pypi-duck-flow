@@ -27,6 +27,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   pypi_metrics:
     pypi_daily_stats:
-      +materialized: table
-      +pre-hook: "{% if env_var('DBT_TARGET') == 'dev' %}CALL load_aws_credentials(){% endif %}"
-      +post-hook: "{% if env_var('DBT_TARGET') == 'dev' %}{{ export_partition_data('download_date','s3://tmp-mehdio', this.name ) }}{% endif %}"
+      +materialized: "{{ 'incremental' if target.name == 'prod' else 'table' }}"
+      +unique_key: load_id
+      +pre-hook: "{% if target.name == 'dev' %}CALL load_aws_credentials(){% endif %}"
+      +post-hook: "{% if target.name == 'dev' %}{{ export_partition_data('download_date','s3://tmp-mehdio', this.name ) }}{% endif %}"
