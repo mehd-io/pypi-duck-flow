@@ -22,7 +22,7 @@ pypi-transform:
 	cd $$DBT_FOLDER && \
 	dbt run \
 		--target $$DBT_TARGET \
-		--vars '{"start_date": "$$START_DATE", "end_date": "$$END_DATE"}'
+		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)"}'
 
 ## Development
 install: 
