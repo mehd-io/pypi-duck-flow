@@ -1,4 +1,5 @@
-{% macro export_partition_data(date_column, s3_path, table) %}
+{% macro export_partition_data(date_column, table) %}
+{% set s3_path = env_var('S3_PATH_OUTPUT_BUCKET', 'my-bucket-path') %}
     COPY (
         SELECT *,
             YEAR({{ date_column }}) AS year, 
