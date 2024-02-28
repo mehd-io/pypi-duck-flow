@@ -4,7 +4,7 @@ This project is a collections of pipelines to get insights of your python projec
 
 The project is composed of series in 3 parts :
 - Ingestion ([YouTube video](https://youtu.be/3pLKTmdWDXk?si=ZI9fjoGQ7hHzznOZ))
-- transformation (TODO)
+- transformation (WIP)
 - visualization (TODO)
 
 ## High level architecture
@@ -51,3 +51,4 @@ DESTINATION=local,s3,md # destinations to push data to, can be one or more
 Once you fill your `.env` file, do the following :
 * `make install` : to install the dependencies
 * `make pypi-ingest` : to run the ingestion pipeline
+* `make pypi-transform START_DATE=2023-04-05 END_DATE=2023-04-07 DBT_TARGET=dev` : example of a run using external table, change to prod for motherduck

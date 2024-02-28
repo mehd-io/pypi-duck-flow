@@ -3,9 +3,7 @@ pypi_metrics:
     dev:
       type: duckdb
       path: /tmp/dbt.duckdb
-      extensions:
-        - httpfs
-        - parquet
-        - aws
+    prod:
+      type: duckdb
+      path: "md:"
   target: dev
-
