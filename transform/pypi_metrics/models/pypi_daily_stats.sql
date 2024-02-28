@@ -16,7 +16,7 @@ WITH pre_aggregated_data AS (
             )
         END AS python_version
     FROM
-        {{ source('external_source', 'pypi_file_downloads') }}
+          {{ dbt_unit_testing.source('external_source', 'pypi_file_downloads') }}
     WHERE
         download_date >= '{{ var("start_date") }}'
         AND download_date < '{{ var("end_date") }}'

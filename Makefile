@@ -24,6 +24,11 @@ pypi-transform:
 		--target $$DBT_TARGET \
 		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)"}'
 
+# Date are harcoded as depending on mock data
+pypi-transform-test:
+	cd $$DBT_FOLDER && \
+	dbt test
+
 ## Development
 install: 
 	poetry install

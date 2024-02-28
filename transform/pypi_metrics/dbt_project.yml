@@ -31,3 +31,7 @@ models:
       +unique_key: load_id
       +pre-hook: "{% if target.name == 'dev' %}CALL load_aws_credentials(){% endif %}"
       +post-hook: "{% if target.name == 'dev' %}{{ export_partition_data('download_date','s3://tmp-mehdio', this.name ) }}{% endif %}"
+
+vars:
+  start_date: '2023-04-01'  # Default start date for mock unit tests
+  end_date: '2023-04-03'    # Default end date for mock unit tests

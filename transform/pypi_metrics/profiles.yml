@@ -6,4 +6,4 @@ pypi_metrics:
     prod:
       type: duckdb
       path: "md:"
-  target: prod
+  target: dev
