@@ -19,7 +19,7 @@ pypi-ingest:
 		--destination $$DESTINATION
 
 pypi-ingest-test:
-	pytest tests
+	pytest ingestion/tests
 
 pypi-transform:
 	cd $$DBT_FOLDER && \

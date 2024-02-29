@@ -90,7 +90,7 @@ def file_downloads_df():
     )
 
     # Load data from CSV
-    conn.execute("COPY tbl FROM 'tests/ingestion/sample_file_downloads.csv' (HEADER)")
+    conn.execute("COPY tbl FROM 'ingestion/tests/sample_file_downloads.csv' (HEADER)")
     # Create DataFrame
     return conn.execute("SELECT * FROM tbl").df()
 
