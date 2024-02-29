@@ -18,13 +18,15 @@ pypi-ingest:
 		--timestamp_column $$TIMESTAMP_COLUMN \
 		--destination $$DESTINATION
 
+pypi-ingest-test:
+	pytest tests
+
 pypi-transform:
 	cd $$DBT_FOLDER && \
 	dbt run \
 		--target $$DBT_TARGET \
 		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)"}'
 
-# Date are harcoded as depending on mock data
 pypi-transform-test:
 	cd $$DBT_FOLDER && \
 	dbt test
@@ -36,8 +38,6 @@ install:
 format:
 	ruff format . 
 
-test:
-	pytest tests
 
 aws-sso-creds:
 # DuckDB aws creds doesn't support loading from sso, so this create temporary creds file
