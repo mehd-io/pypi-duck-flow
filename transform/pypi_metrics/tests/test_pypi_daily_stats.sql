@@ -31,7 +31,7 @@
       NULL AS file, -- Assuming the 'file' struct is not essential for this test
       STRUCT_PACK(
           installer := NULL,
-          python := '3.8.2',
+          python := '3.8.1',
           implementation := NULL,
           distro := NULL,
           system := STRUCT_PACK(name := 'Linux', release := '4.15.0-66-generic'),
@@ -48,7 +48,10 @@
 {% call dbt_unit_testing.expect() %}
     SELECT 
       '2023-04-02'::date AS download_date, 
-      'duckdb' AS project, 
+      'duckdb' AS project,
+      '3.8' AS python_version,
+      'x86_64' AS cpu,
+      'Linux' AS system_name,
       2 AS daily_download_sum -- Adjust this based on the expected outcome of your test
   {% endcall %}
 
