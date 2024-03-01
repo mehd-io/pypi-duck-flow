@@ -4,7 +4,7 @@ This project is a collections of pipelines to get insights of your python projec
 
 The project is composed of series in 3 parts :
 - Ingestion ([YouTube video](https://youtu.be/3pLKTmdWDXk?si=ZI9fjoGQ7hHzznOZ))
-- transformation 
+- transformation ([YouTube video](https://www.youtube.com/watch?v=SpfEQQXBGMQ))
 - visualization (TODO)
 
 ## High level architecture
@@ -59,7 +59,7 @@ Once you fill your `.env` file, do the following :
 ## Transformation
 
 ### Requirements
-You can choose to push the data of the transform pipeline either to AWS S3 or to MotherDuck. Both pipelines rely on source data storing on AWS S3 (see Ingestion section for more details). The code uses a public sample dataset.
+You can choose to push the data of the transform pipeline either to AWS S3 or to MotherDuck. Both pipelines rely on source data storing on AWS S3 (see Ingestion section for more details). You can use a public sample dataset for this part of the tutorial, which is located at `s3://us-prd-motherduck-open-datasets/pypi/sample_tutorial/pypi_file_downloads/*/*/*.parquet` 
 For AWS S3, you would need : 
 - [AWS S3 bucket](https://aws.amazon.com/s3/) 
 - AWS credentials (at the default `~/.aws/credentials` path) that has read access to the bucket source bucket and write to the destination bucket

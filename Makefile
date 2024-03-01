@@ -27,9 +27,11 @@ pypi-transform:
 		--target $$DBT_TARGET \
 		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)"}'
 
+# Note : start_date and end_date depends on the mock data in the test
 pypi-transform-test:
 	cd $$DBT_FOLDER && \
-	dbt test
+	dbt test \
+		--vars '{"start_date": "2023-04-01", "end_date": "2023-04-03"}'
 
 ## Development
 install: 
