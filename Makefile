@@ -3,11 +3,18 @@ export
 
 DBT_FOLDER = transform/pypi_metrics/
 DBT_TARGET = dev
+DOCKER ?= false
+DOCKER_CMD = 
+DOCKER_IMAGE ?= ghcr.io/mehd-io/pypi-duck-flow:latest 
 
-.PHONY : help pypi-ingest format test aws-sso-creds pypi-transform
+ifeq ($(DOCKER),true)
+	DOCKER_CMD = docker run --rm -v $(PWD):/app -w /app $(DOCKER_IMAGE)
+endif
+
+.PHONY : help pypi-ingest format test aws-sso-creds pypi-transform 
 
 pypi-ingest: 
-	poetry run python3 -m ingestion.pipeline \
+	$(DOCKER_CMD) poetry run python3 -m ingestion.pipeline \
 		--start_date $$START_DATE \
 		--end_date $$END_DATE \
 		--pypi_project $$PYPI_PROJECT \
@@ -22,7 +29,7 @@ pypi-ingest-test:
 	pytest ingestion/tests
 
 pypi-transform:
-	cd $$DBT_FOLDER && \
+	$(DOCKER_CMD) cd $$DBT_FOLDER && \
 	dbt run \
 		--target $$DBT_TARGET \
 		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)"}'
@@ -32,6 +39,10 @@ pypi-transform-test:
 	cd $$DBT_FOLDER && \
 	dbt test \
 		--vars '{"start_date": "2023-04-01", "end_date": "2023-04-03"}'
+
+## Docker 
+build:
+	docker build -t $(DOCKER_IMAGE) --build-arg PLATFORM=arm64 .
 
 ## Development
 install: 
