@@ -1,0 +1,46 @@
+name: Execute Make Command with Env Variables
+
+permissions:
+  id-token: write
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  run-make-command:
+    runs-on: ubuntu-latest
+
+    steps:
+      - id: 'auth'
+        name: 'Authenticate to GCP'
+        uses: 'google-github-actions/auth@v0.3.1'
+        with:
+            create_credentials_file: 'true'
+            workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+      - id: 'gcloud'
+        name: 'gcloud'
+        run: |-
+          gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
+          gcloud services list
+      
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Pull latest Docker image
+        run: docker pull ghcr.io/${{ github.repository }}:latest
+
+      - name: Run Make Command
+        env:
+          START_DATE: ${{ github.event.inputs.START_DATE }}
+          END_DATE: ${{ github.event.inputs.END_DATE }}
+          PYPI_PROJECT: ${{ github.event.inputs.PYPI_PROJECT }}
+          TABLE_NAME: ${{ github.event.inputs.TABLE_NAME }}
+          S3_PATH: ${{ github.event.inputs.S3_PATH }}
+          AWS_PROFILE: ${{ github.event.inputs.AWS_PROFILE }}
+          GCP_PROJECT: ${{ github.event.inputs.GCP_PROJECT }}
+          TIMESTAMP_COLUMN: ${{ github.event.inputs.TIMESTAMP_COLUMN }}
+          DESTINATION: ${{ github.event.inputs.DESTINATION }}
+          DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
+        run: |
+          make pypi-ingest
