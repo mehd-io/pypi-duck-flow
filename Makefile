@@ -1,4 +1,4 @@
-include .env
+-include .env
 export
 
 DBT_FOLDER = transform/pypi_metrics/
