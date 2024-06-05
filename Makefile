@@ -1,11 +1,12 @@
 -include .env
 export
 
+REPOSITORY=mehd-io/pypi-duck-flow
 DBT_FOLDER = transform/pypi_metrics/
 DBT_TARGET = dev
 DOCKER ?= false
 DOCKER_CMD = 
-DOCKER_IMAGE ?= ghcr.io/mehd-io/pypi-duck-flow:latest 
+DOCKER_IMAGE ?= ghcr.io/$(REPOSITORY)
 
 ifeq ($(DOCKER),true)
 	DOCKER_CMD = docker run --rm -v $(PWD):/app -w /app $(DOCKER_IMAGE)
@@ -42,7 +43,7 @@ pypi-transform-test:
 
 ## Docker 
 build:
-	docker build -t $(DOCKER_IMAGE) --build-arg PLATFORM=arm64 .
+	docker build --label org.opencontainers.image.source=https://github.com/$(GITHUB_REPOSITORY) -t $(DOCKER_IMAGE) --build-arg PLATFORM=arm64 .
 
 ## Development
 install: 
