@@ -1,9 +1,8 @@
 name: Build and Publish Docker Image
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   build-and-publish:
@@ -20,6 +19,9 @@ jobs:
         run: echo ${{ secrets.GHA_PACKAGES }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build Docker image
+        env:
+          DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: make build
 
       - name: Push Docker image

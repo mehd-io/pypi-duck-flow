@@ -1,6 +1,3 @@
-# This connect the image to the repository 
-LABEL org.opencontainers.image.source https://github.com/mehd-io/pypi-duck-flow
-
 # Stage 1: Base
 FROM python:3.11 as base
 
