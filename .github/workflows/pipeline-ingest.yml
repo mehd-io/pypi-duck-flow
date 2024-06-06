@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
       - id: 'auth'
         name: 'Authenticate to GCP'
         uses: 'google-github-actions/auth@v2'
@@ -24,8 +27,6 @@ jobs:
             gcloud auth list
             gcloud services list
       
-      - name: Checkout repository
-        uses: actions/checkout@v3
 
       - name: Pull latest Docker image
         run: docker pull ghcr.io/${{ github.repository }}:latest
