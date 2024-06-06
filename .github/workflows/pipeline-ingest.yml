@@ -21,27 +21,18 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SECRETS }}'
 
-      - id: 'gcloud'
-        name: 'gcloud'
-        run: |-
-            gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
-            gcloud services list
-      
-
       - name: Pull latest Docker image
         run: docker pull ghcr.io/${{ github.repository }}:latest
 
       - name: Run Make Command
         env:
-          START_DATE: ${{ github.event.inputs.START_DATE }}
-          END_DATE: ${{ github.event.inputs.END_DATE }}
-          PYPI_PROJECT: ${{ github.event.inputs.PYPI_PROJECT }}
-          TABLE_NAME: ${{ github.event.inputs.TABLE_NAME }}
-          S3_PATH: ${{ github.event.inputs.S3_PATH }}
-          AWS_PROFILE: ${{ github.event.inputs.AWS_PROFILE }}
-          GCP_PROJECT: ${{ github.event.inputs.GCP_PROJECT }}
-          TIMESTAMP_COLUMN: ${{ github.event.inputs.TIMESTAMP_COLUMN }}
-          DESTINATION: ${{ github.event.inputs.DESTINATION }}
+          START_DATE: 2023-01-01
+          END_DATE: 2023-02-01
+          PYPI_PROJECT: duckdb
+          TABLE_NAME: pypi_file_downloads
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }} 
+          TIMESTAMP_COLUMN: timestamp
+          DESTINATION: md
           DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
         run: |
           make pypi-ingest
