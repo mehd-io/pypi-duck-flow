@@ -16,8 +16,7 @@ jobs:
         name: 'Authenticate to GCP'
         uses: 'google-github-actions/auth@v2'
         with:
-            project_id: ${{ secrets.GCP_PROJECT_ID }}
-            workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          credentials_json: '${{ secrets.GCP_SECRETS }}'
 
       - id: 'check-auth'
         name: 'Verify Authentication and List Services'
