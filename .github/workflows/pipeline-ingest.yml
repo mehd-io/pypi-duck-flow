@@ -14,15 +14,16 @@ jobs:
     steps:
       - id: 'auth'
         name: 'Authenticate to GCP'
-        uses: 'google-github-actions/auth@v0.3.1'
+        uses: 'google-github-actions/auth@v2'
         with:
-            create_credentials_file: 'true'
+            project_id: ${{ secrets.GCP_PROJECT_ID }}
             workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
-      - id: 'gcloud'
-        name: 'gcloud'
+
+      - id: 'check-auth'
+        name: 'Verify Authentication and List Services'
         run: |-
-          gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
-          gcloud services list
+            gcloud auth list
+            gcloud services list
       
       - name: Checkout repository
         uses: actions/checkout@v3
