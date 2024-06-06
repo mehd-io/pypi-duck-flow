@@ -21,10 +21,10 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_SECRETS }}'
 
-      - id: 'check-auth'
-        name: 'Verify Authentication and List Services'
+      - id: 'gcloud'
+        name: 'gcloud'
         run: |-
-            gcloud auth list
+            gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
             gcloud services list
       
 
