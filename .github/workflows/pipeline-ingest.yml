@@ -35,4 +35,4 @@ jobs:
           DESTINATION: md
           DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
         run: |
-          make pypi-ingest
+          make pypi-ingest DOCKER=true
