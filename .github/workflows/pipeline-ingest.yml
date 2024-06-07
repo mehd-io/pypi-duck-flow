@@ -34,5 +34,7 @@ jobs:
           TIMESTAMP_COLUMN: timestamp
           DESTINATION: md
           DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
+          AWS_PROFILE: None
+          S3_PATH: None
         run: |
           make pypi-ingest DOCKER=true
