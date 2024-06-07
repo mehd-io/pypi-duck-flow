@@ -12,6 +12,7 @@ ifeq ($(DOCKER),true)
     DOCKER_CMD = docker run --rm -v $(PWD):/app -w /app \
         -v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
         -e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
+        -e motherduck_token=$(MOTHERDUCK_TOKEN) \
         $(DOCKER_IMAGE)
 endif
 
