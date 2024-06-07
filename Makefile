@@ -10,7 +10,7 @@ DOCKER_IMAGE ?= ghcr.io/$(REPOSITORY)
 
 ifeq ($(DOCKER),true)
     DOCKER_CMD = docker run --rm -v $(PWD):/app -w /app \
-        -v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \  # Add this line to mount the credentials
+        -v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
         -e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
         $(DOCKER_IMAGE)
 endif
