@@ -4,8 +4,6 @@ permissions:
   id-token: write
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       start_date:
@@ -17,8 +15,8 @@ on:
         required: true
         default: ''
   schedule:
-    - cron: '0 0 * * *'  # Runs at midnight every day
-
+    - cron: '0 0 * * *' 
+    
 jobs:
   ingest-pypi-data:
     runs-on: ubuntu-latest

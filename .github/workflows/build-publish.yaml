@@ -1,8 +1,9 @@
 name: Build and Publish Docker Image
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
 
 jobs:
   build-and-publish:
