@@ -1,0 +1,65 @@
+name: Ingest pypi data
+
+permissions:
+  id-token: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: 'Start Date'
+        required: true
+        default: ''
+      end_date:
+        description: 'End Date'
+        required: true
+        default: ''
+  schedule:
+    - cron: '0 0 * * *' 
+    
+jobs:
+  ingest-pypi-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - id: 'auth'
+        name: 'Authenticate to GCP'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SECRETS }}'
+
+      - name: Calculate Dates
+        id: dates
+        run: |
+          if [ -n "${{ github.event.inputs.start_date }}" ] && [ -n "${{ github.event.inputs.end_date }}" ]; then
+            echo "START_DATE=${{ github.event.inputs.start_date }}" >> $GITHUB_ENV
+            echo "END_DATE=${{ github.event.inputs.end_date }}" >> $GITHUB_ENV
+          else
+            START_DATE=$(date -d '2 days ago' +%Y-%m-%d)
+            END_DATE=$(date -d '1 day ago' +%Y-%m-%d)
+            echo "START_DATE=${START_DATE}" >> $GITHUB_ENV
+            echo "END_DATE=${END_DATE}" >> $GITHUB_ENV
+          fi
+
+      - name: Pull latest Docker image
+        run: docker pull ghcr.io/${{ github.repository }}:latest
+
+      - name: Ingest pypi data
+        env:
+          START_DATE: ${{ env.START_DATE }}
+          END_DATE: ${{ env.END_DATE }}
+          PYPI_PROJECT: duckdb
+          TABLE_NAME: pypi_file_downloads
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }} 
+          TIMESTAMP_COLUMN: timestamp
+          DESTINATION: md
+          DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
+          AWS_PROFILE: None
+          S3_PATH: None
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+        run: |
+          make pypi-ingest DOCKER=true
