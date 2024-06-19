@@ -6,7 +6,7 @@ import pandas as pd
 def create_table_from_dataframe(
     duckdb_con, table_name: str, dataframe: str, table_ddl: str
 ):
-    logger.info(f"Creating table {table_ddl}")
+    logger.info(f"Creating table {table_name} in local DuckDB")
     duckdb_con.sql(table_ddl)
     logger.info("inserting data into table")
     duckdb_con.sql(
