@@ -15,7 +15,7 @@ from ingestion.duck import (
 )
 import fire
 from ingestion.models import (
-    validate_dataframe,
+    validate_table,
     FileDownloads,
     PypiJobParameters,
     duckdb_ddl_file_downloads,
@@ -26,16 +26,18 @@ import os
 def main(params: PypiJobParameters):
     start_time = datetime.now()
     # Loading data from BigQuery
-    df = get_bigquery_result(
+    pa_tbl = get_bigquery_result(
         query_str=build_pypi_query(params),
         bigquery_client=get_bigquery_client(project_name=params.gcp_project),
         model=FileDownloads,
     )
-    validate_dataframe(df, FileDownloads)
+    validate_table(pa_tbl, FileDownloads)
     # Loading to DuckDB
     conn = duckdb.connect()
     create_table_from_dataframe(
-        conn, params.table_name, "df", duckdb_ddl_file_downloads("pypi_file_downloads")
+        duckdb_con=conn,
+        table_name=params.table_name,
+        table_ddl=duckdb_ddl_file_downloads("pypi_file_downloads"),
     )
 
     logger.info(f"Sinking data to {params.destination}")
@@ -61,7 +63,9 @@ def main(params: PypiJobParameters):
         )
     end_time = datetime.now()
     elapsed = (end_time - start_time).total_seconds()
-    logger.info(f"Total job completed in {elapsed // 60} minutes and {elapsed % 60:.2f} seconds.")
+    logger.info(
+        f"Total job completed in {elapsed // 60} minutes and {elapsed % 60:.2f} seconds."
+    )
 
 
 if __name__ == "__main__":

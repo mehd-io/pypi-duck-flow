@@ -4,6 +4,7 @@ from pydantic import BaseModel, ValidationError
 from datetime import datetime
 from typing import Optional, Dict
 import pandas as pd
+import pyarrow as pa
 
 DUCKDB_EXTENSION = ["aws", "httpfs"]
 
@@ -56,27 +57,14 @@ class Details(BaseModel):
 
 
 class FileDownloads(BaseModel):
-    timestamp: Optional[datetime]=None
-    country_code: Optional[str]=None
-    url: Optional[str]=None
-    project: Optional[str]=None
-    file: Optional[File]=None
-    details: Optional[Details]=None
-    tls_protocol: Optional[str]=None
-    tls_cipher: Optional[str]=None
-
-    @property
-    def pandas_dtypes(self) -> Dict[str, str]:
-        return {
-            "timestamp": "datetime64[ns, UTC]",
-            "country_code": "object", 
-            "url": "object",
-            "project": "object",
-            "file": "object", 
-            "details": "object", 
-            "tls_protocol": "object",
-            "tls_cipher": "object",
-        }
+    timestamp: Optional[datetime] = None
+    country_code: Optional[str] = None
+    url: Optional[str] = None
+    project: Optional[str] = None
+    file: Optional[File] = None
+    details: Optional[Details] = None
+    tls_protocol: Optional[str] = None
+    tls_cipher: Optional[str] = None
 
 
 class PypiJobParameters(BaseModel):
@@ -93,22 +81,25 @@ class PypiJobParameters(BaseModel):
     aws_profile: Optional[str]
 
 
-class DataFrameValidationError(Exception):
-    """Custom exception for DataFrame validation errors."""
+class TableValidationError(Exception):
+    """Custom exception for Table validation errors."""
+
+    pass
 
 
-def validate_dataframe(df: pd.DataFrame, model: Type[BaseModel]):
+def validate_table(table: pa.Table, model: Type[BaseModel]):
     """
-    Validates each row of a DataFrame against a Pydantic model.
-    Raises DataFrameValidationError if any row fails validation.
+    Validates each row of a PyArrow Table against a Pydantic model.
+    Raises TableValidationError if any row fails validation.
 
-    :param df: DataFrame to validate.
+    :param table: PyArrow Table to validate.
     :param model: Pydantic model to validate against.
-    :raises: DataFrameValidationError
+    :raises: TableValidationError
     """
     errors = []
 
-    for i, row in enumerate(df.to_dict(orient="records")):
+    for i in range(table.num_rows):
+        row = {column: table[column][i].as_py() for column in table.column_names}
         try:
             model(**row)
         except ValidationError as e:
@@ -116,8 +107,8 @@ def validate_dataframe(df: pd.DataFrame, model: Type[BaseModel]):
 
     if errors:
         error_message = "\n".join(errors)
-        raise DataFrameValidationError(
-            f"DataFrame validation failed with the following errors:\n{error_message}"
+        raise TableValidationError(
+            f"Table validation failed with the following errors:\n{error_message}"
         )
 
 
