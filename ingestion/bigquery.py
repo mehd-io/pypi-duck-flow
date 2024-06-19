@@ -5,7 +5,6 @@ from google.auth.exceptions import DefaultCredentialsError
 from loguru import logger
 import time
 from ingestion.models import PypiJobParameters, FileDownloads
-import pandas as pd
 import pyarrow as pa
 
 PYPI_PUBLIC_DATASET = "bigquery-public-data.pypi.file_downloads"

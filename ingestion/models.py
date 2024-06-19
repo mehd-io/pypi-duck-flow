@@ -3,7 +3,6 @@ from typing import List, Union, Annotated, Type
 from pydantic import BaseModel, ValidationError
 from datetime import datetime
 from typing import Optional, Dict
-import pandas as pd
 import pyarrow as pa
 
 DUCKDB_EXTENSION = ["aws", "httpfs"]

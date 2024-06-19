@@ -1,6 +1,5 @@
 """ Helper functions for interacting with DuckDB """
 from loguru import logger
-import pandas as pd
 
 
 def create_table_from_dataframe(duckdb_con, table_name: str, table_ddl: str):
