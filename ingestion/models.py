@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Union, Annotated, Type
 from pydantic import BaseModel, ValidationError
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
 import pandas as pd
 
 DUCKDB_EXTENSION = ["aws", "httpfs"]
@@ -52,17 +52,31 @@ class Details(BaseModel):
     openssl_version: Optional[str]
     setuptools_version: Optional[str]
     rustc_version: Optional[str]
+    ci: Optional[bool]
 
 
 class FileDownloads(BaseModel):
-    timestamp: Optional[datetime]
-    country_code: Optional[str]
-    url: Optional[str]
-    project: Optional[str]
-    file: Optional[File]
-    details: Optional[Details]
-    tls_protocol: Optional[str]
-    tls_cipher: Optional[str]
+    timestamp: Optional[datetime]=None
+    country_code: Optional[str]=None
+    url: Optional[str]=None
+    project: Optional[str]=None
+    file: Optional[File]=None
+    details: Optional[Details]=None
+    tls_protocol: Optional[str]=None
+    tls_cipher: Optional[str]=None
+
+    @property
+    def pandas_dtypes(self) -> Dict[str, str]:
+        return {
+            "timestamp": "datetime64[ns, UTC]",
+            "country_code": "object", 
+            "url": "object",
+            "project": "object",
+            "file": "object", 
+            "details": "object", 
+            "tls_protocol": "object",
+            "tls_cipher": "object",
+        }
 
 
 class PypiJobParameters(BaseModel):
@@ -105,3 +119,18 @@ def validate_dataframe(df: pd.DataFrame, model: Type[BaseModel]):
         raise DataFrameValidationError(
             f"DataFrame validation failed with the following errors:\n{error_message}"
         )
+
+
+def duckdb_ddl_file_downloads(table_name="pypi_file_downloads"):
+    return f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        timestamp TIMESTAMP WITH TIME ZONE,
+        country_code VARCHAR,
+        url VARCHAR,
+        project VARCHAR,
+        file STRUCT("filename" VARCHAR, "project" VARCHAR, "version" VARCHAR, "type" VARCHAR),
+        details STRUCT("installer" STRUCT("name" VARCHAR, "version" VARCHAR), "python" VARCHAR, "implementation" STRUCT("name" VARCHAR, "version" VARCHAR), "distro" STRUCT("name" VARCHAR, "version" VARCHAR, "id" VARCHAR, "libc" STRUCT("lib" VARCHAR, "version" VARCHAR)), "system" STRUCT("name" VARCHAR, "release" VARCHAR), "cpu" VARCHAR, "openssl_version" VARCHAR, "setuptools_version" VARCHAR, "rustc_version" VARCHAR, "ci" BOOLEAN),
+        tls_protocol VARCHAR,
+        tls_cipher VARCHAR
+    )
+    """

@@ -1,12 +1,17 @@
 """ Helper functions for interacting with DuckDB """
-from typing import List
 from loguru import logger
+import pandas as pd
 
 
-def create_table_from_dataframe(duckdb_con, table_name: str, dataframe: str):
+def create_table_from_dataframe(
+    duckdb_con, table_name: str, dataframe: str, table_ddl: str
+):
+    logger.info(f"Creating table {table_ddl}")
+    duckdb_con.sql(table_ddl)
+    logger.info("inserting data into table")
     duckdb_con.sql(
         f"""
-        CREATE TABLE {table_name} AS 
+        INSERT INTO {table_name} 
             SELECT *
             FROM {dataframe}
         """
@@ -51,16 +56,23 @@ def write_to_md_from_duckdb(
     start_date: str,
     end_date: str,
 ):
-    logger.info(f"Writing data to motherduck {remote_database}.main.{table}")
+    logger.info(
+        f"Creating database {remote_database} from {local_database}.{table} if it doesn't exist"
+    )
     duckdb_con.sql(f"CREATE DATABASE IF NOT EXISTS {remote_database}")
+    logger.info(
+        f"Creating table {remote_database}.main.{table} from {local_database}.{table} if it doesn't exist"
+    )
     duckdb_con.sql(
         f"CREATE TABLE IF NOT EXISTS {remote_database}.{table} AS SELECT * FROM {local_database}.{table} limit 0"
     )
     # Delete any existing data in the date range
+    logger.info(f"Deleting data from {start_date} to {end_date}")
     duckdb_con.sql(
         f"DELETE FROM {remote_database}.main.{table} WHERE {timestamp_column} BETWEEN '{start_date}' AND '{end_date}'"
     )
     # Insert new data
+    logger.info(f"Writing data to motherduck {remote_database}.main.{table}")
     duckdb_con.sql(
         f"""
     INSERT INTO {remote_database}.main.{table}

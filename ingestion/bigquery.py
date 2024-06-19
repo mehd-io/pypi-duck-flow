@@ -4,7 +4,7 @@ from google.oauth2 import service_account
 from google.auth.exceptions import DefaultCredentialsError
 from loguru import logger
 import time
-from ingestion.models import PypiJobParameters
+from ingestion.models import PypiJobParameters, FileDownloads
 import pandas as pd
 
 PYPI_PUBLIC_DATASET = "bigquery-public-data.pypi.file_downloads"
@@ -46,10 +46,10 @@ def get_bigquery_client(project_name: str) -> bigquery.Client:
 
     except DefaultCredentialsError as creds_error:
         raise creds_error
-
+2
 
 def get_bigquery_result(
-    query_str: str, bigquery_client: bigquery.Client
+    query_str: str, bigquery_client: bigquery.Client, model: FileDownloads
 ) -> pd.DataFrame:
     """Get query result from BigQuery and yield rows as dictionaries."""
     try:
@@ -57,7 +57,7 @@ def get_bigquery_result(
         start_time = time.time()
         # Run the query and directly load into a DataFrame
         logger.info(f"Running query: {query_str}")
-        dataframe = bigquery_client.query(query_str).to_dataframe()
+        dataframe = bigquery_client.query(query_str).to_dataframe(dtypes=FileDownloads().pandas_dtypes)
         # Log the time taken for query execution and data loading
         elapsed_time = time.time() - start_time
         logger.info(f"Query executed and data loaded in {elapsed_time:.2f} seconds")
