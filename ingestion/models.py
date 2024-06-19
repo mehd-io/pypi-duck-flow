@@ -2,8 +2,9 @@ from pydantic import BaseModel, Field
 from typing import List, Union, Annotated, Type
 from pydantic import BaseModel, ValidationError
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
 import pandas as pd
+import pyarrow as pa
 
 DUCKDB_EXTENSION = ["aws", "httpfs"]
 
@@ -52,17 +53,18 @@ class Details(BaseModel):
     openssl_version: Optional[str]
     setuptools_version: Optional[str]
     rustc_version: Optional[str]
+    ci: Optional[bool]
 
 
 class FileDownloads(BaseModel):
-    timestamp: Optional[datetime]
-    country_code: Optional[str]
-    url: Optional[str]
-    project: Optional[str]
-    file: Optional[File]
-    details: Optional[Details]
-    tls_protocol: Optional[str]
-    tls_cipher: Optional[str]
+    timestamp: Optional[datetime] = None
+    country_code: Optional[str] = None
+    url: Optional[str] = None
+    project: Optional[str] = None
+    file: Optional[File] = None
+    details: Optional[Details] = None
+    tls_protocol: Optional[str] = None
+    tls_cipher: Optional[str] = None
 
 
 class PypiJobParameters(BaseModel):
@@ -79,22 +81,25 @@ class PypiJobParameters(BaseModel):
     aws_profile: Optional[str]
 
 
-class DataFrameValidationError(Exception):
-    """Custom exception for DataFrame validation errors."""
+class TableValidationError(Exception):
+    """Custom exception for Table validation errors."""
+
+    pass
 
 
-def validate_dataframe(df: pd.DataFrame, model: Type[BaseModel]):
+def validate_table(table: pa.Table, model: Type[BaseModel]):
     """
-    Validates each row of a DataFrame against a Pydantic model.
-    Raises DataFrameValidationError if any row fails validation.
+    Validates each row of a PyArrow Table against a Pydantic model.
+    Raises TableValidationError if any row fails validation.
 
-    :param df: DataFrame to validate.
+    :param table: PyArrow Table to validate.
     :param model: Pydantic model to validate against.
-    :raises: DataFrameValidationError
+    :raises: TableValidationError
     """
     errors = []
 
-    for i, row in enumerate(df.to_dict(orient="records")):
+    for i in range(table.num_rows):
+        row = {column: table[column][i].as_py() for column in table.column_names}
         try:
             model(**row)
         except ValidationError as e:
@@ -102,6 +107,21 @@ def validate_dataframe(df: pd.DataFrame, model: Type[BaseModel]):
 
     if errors:
         error_message = "\n".join(errors)
-        raise DataFrameValidationError(
-            f"DataFrame validation failed with the following errors:\n{error_message}"
+        raise TableValidationError(
+            f"Table validation failed with the following errors:\n{error_message}"
         )
+
+
+def duckdb_ddl_file_downloads(table_name="pypi_file_downloads"):
+    return f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        timestamp TIMESTAMP WITH TIME ZONE,
+        country_code VARCHAR,
+        url VARCHAR,
+        project VARCHAR,
+        file STRUCT("filename" VARCHAR, "project" VARCHAR, "version" VARCHAR, "type" VARCHAR),
+        details STRUCT("installer" STRUCT("name" VARCHAR, "version" VARCHAR), "python" VARCHAR, "implementation" STRUCT("name" VARCHAR, "version" VARCHAR), "distro" STRUCT("name" VARCHAR, "version" VARCHAR, "id" VARCHAR, "libc" STRUCT("lib" VARCHAR, "version" VARCHAR)), "system" STRUCT("name" VARCHAR, "release" VARCHAR), "cpu" VARCHAR, "openssl_version" VARCHAR, "setuptools_version" VARCHAR, "rustc_version" VARCHAR, "ci" BOOLEAN),
+        tls_protocol VARCHAR,
+        tls_cipher VARCHAR
+    )
+    """
