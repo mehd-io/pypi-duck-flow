@@ -5,7 +5,7 @@ SELECT
     python_version,
     SUM(daily_download_sum) AS weekly_download_sum 
 FROM 
-   duckdb_stats.pypi.daily_stats 
+   duckdb_stats.main.pypi_daily_stats 
 GROUP BY 
     ALL
 ORDER BY 
