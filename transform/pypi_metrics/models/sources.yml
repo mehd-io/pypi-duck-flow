@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: external_source
     meta:
-      external_location: "{{ env_var('TRANSFORM_S3_PATH_INPUT') }}"
+      external_location: "{{ env_var('TRANSFORM_S3_PATH_OUTPUT', 'my-bucket-path') }}"
     tables:
       - name: pypi_file_downloads
   - name: duckdb_stats

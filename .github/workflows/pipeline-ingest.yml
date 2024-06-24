@@ -59,7 +59,7 @@ jobs:
           DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
           AWS_PROFILE: None
           S3_PATH: None
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
         run: |
           make pypi-ingest DOCKER=true
@@ -70,7 +70,7 @@ jobs:
           END_DATE: ${{ env.END_DATE }}
           DBT_TARGET: prod
           DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
         run: |
           make pypi-transform DOCKER=true
