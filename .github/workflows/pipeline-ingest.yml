@@ -63,3 +63,14 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
         run: |
           make pypi-ingest DOCKER=true
+      
+      - name: Transform pypi data using dbt
+        env:
+          START_DATE: ${{ env.START_DATE }}
+          END_DATE: ${{ env.END_DATE }}
+          DBT_TARGET: prod
+          DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+        run: |
+          make pypi-transform DOCKER=true

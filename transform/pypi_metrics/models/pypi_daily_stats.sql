@@ -16,7 +16,11 @@ WITH pre_aggregated_data AS (
             )
         END AS python_version
     FROM
-          {{ dbt_unit_testing.source('external_source', 'pypi_file_downloads') }}
+        {% if var('data_source') == 'external_source' %}
+        {{ dbt_unit_testing.source('external_source', 'pypi_file_downloads') }}
+        {% else %}
+        {{ dbt_unit_testing.source('duckdb_stats', 'pypi_file_downloads') }}
+        {% endif %}
     WHERE
         download_date >= '{{ var("start_date") }}'
         AND download_date < '{{ var("end_date") }}'

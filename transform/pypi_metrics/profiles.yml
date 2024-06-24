@@ -5,5 +5,5 @@ pypi_metrics:
       path: /tmp/dbt.duckdb
     prod:
       type: duckdb
-      path: "md:"
+      path: "md:duckdb_stats"
   target: dev
