@@ -37,7 +37,7 @@ def main(params: PypiJobParameters):
     create_table_from_dataframe(
         duckdb_con=conn,
         table_name=params.table_name,
-        table_ddl=duckdb_ddl_file_downloads("pypi_file_downloads"),
+        table_ddl=duckdb_ddl_file_downloads(params.table_name),
     )
 
     logger.info(f"Sinking data to {params.destination}")
@@ -56,7 +56,7 @@ def main(params: PypiJobParameters):
             duckdb_con=conn,
             table=f"{params.table_name}",
             local_database="memory",
-            remote_database="pypi",
+            remote_database="duckdb_stats",
             timestamp_column=params.timestamp_column,
             start_date=params.start_date,
             end_date=params.end_date,

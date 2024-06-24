@@ -9,6 +9,9 @@ config-version: 2
 # This setting configures which "profile" dbt uses for this project.
 profile: 'pypi_metrics'
 
+vars:
+  data_source: 'motherduck'  # Default source, pick 'external_source' to read from S3
+  
 # These configurations specify where dbt should look for different types of files.
 # The `model-paths` config, for example, states that models in this project can be
 # found in the "models/" directory. You probably won't need to change these!

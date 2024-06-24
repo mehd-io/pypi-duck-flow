@@ -4,15 +4,17 @@ export
 REPOSITORY=mehd-io/pypi-duck-flow
 DBT_FOLDER = transform/pypi_metrics/
 DBT_TARGET = dev
+DBT_DATA_SOURCE = motherduck
 DOCKER ?= false
 DOCKER_CMD = 
 DOCKER_IMAGE ?= ghcr.io/$(REPOSITORY)
+TRANSFORM_S3_PATH_INPUT ?= s3://whatever
 
 ifeq ($(DOCKER),true)
     DOCKER_CMD = docker run --rm -v $(PWD):/app -w /app \
         -v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
         -e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
-        -e motherduck_token=$(MOTHERDUCK_TOKEN) \
+        -e motherduck_token=$(motherduck_token) \
         $(DOCKER_IMAGE)
 endif
 
@@ -34,16 +36,19 @@ pypi-ingest-test:
 	pytest ingestion/tests
 
 pypi-transform:
-	$(DOCKER_CMD) cd $$DBT_FOLDER && \
-	dbt run \
+	$(DOCKER_CMD) dbt run \
 		--target $$DBT_TARGET \
-		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)"}'
+		--project-dir $$DBT_FOLDER \
+		--profiles-dir $$DBT_FOLDER \
+		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)", "data_source": "$(DBT_DATA_SOURCE)"}'
 
 # Note : start_date and end_date depends on the mock data in the test
 pypi-transform-test:
-	cd $$DBT_FOLDER && \
-	dbt test \
-		--vars '{"start_date": "2023-04-01", "end_date": "2023-04-03"}'
+	$(DOCKER_CMD) dbt test \
+		--target $$DBT_TARGET \
+		--project-dir $$DBT_FOLDER \
+		--profiles-dir $$DBT_FOLDER \
+		--vars '{"start_date": "2023-04-01", "end_date": "2023-04-03"}' 
 
 ## Docker 
 build:

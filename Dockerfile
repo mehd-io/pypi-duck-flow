@@ -20,7 +20,7 @@ WORKDIR /app
 # Copy Poetry configuration files
 COPY Makefile pyproject.toml poetry.lock ./
 # Install only runtime dependencies
-RUN poetry install --no-dev --no-interaction --no-ansi
+RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 # Copy the codebase
 COPY ./ingestion ./ingestion
 COPY ./transform ./transform
