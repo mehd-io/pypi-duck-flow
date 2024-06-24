@@ -15,3 +15,11 @@
 target/
 dbt_packages/
 logs/
+
+# Dashboard (evidence)
+**/.ddb
+**/node_modules
+**/.evidence
+
+**/connection.options.yaml
+

@@ -1,9 +1,9 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "Python 3",
+	"name": "Python 3 (ingestion/transformation)",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"build": {
-		"dockerfile": "../Dockerfile",
+		"dockerfile": "../../Dockerfile",
 		"target": "development",
 		"args": { 
 			// Options arm64 or amd64
