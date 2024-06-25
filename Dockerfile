@@ -19,11 +19,12 @@ FROM base as production
 WORKDIR /app
 # Copy Poetry configuration files
 COPY Makefile pyproject.toml poetry.lock ./
-# Install only runtime dependencies
-RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
 # Copy the codebase
 COPY ./ingestion ./ingestion
 COPY ./transform ./transform
+# Install only runtime dependencies
+RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
+RUN make dbt-deps
 
 # Default command to keep container running for interactive `make` commands
 CMD ["sleep", "infinity"]

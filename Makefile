@@ -61,6 +61,10 @@ install:
 format:
 	ruff format . 
 
+dbt-deps:
+	$(DOCKER_CMD) dbt deps \
+		--project-dir $$DBT_FOLDER \
+		--profiles-dir $$DBT_FOLDER 
 
 aws-sso-creds:
 # DuckDB aws creds doesn't support loading from sso, so this create temporary creds file
