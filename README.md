@@ -2,10 +2,10 @@
 
 This project is a collections of pipelines to get insights of your python project. It also serves as educational purpose (YouTube videos and blogs) to learn how to build data pipelines with **Python**, **SQL** & **DuckDB**.
 
-The project is composed of series in 3 parts :
-- Ingestion ([YouTube video](https://youtu.be/3pLKTmdWDXk?si=ZI9fjoGQ7hHzznOZ), [Blog](https://motherduck.com/blog/duckdb-python-e2e-data-engineering-project-part-1/))
-- transformation ([YouTube video](https://www.youtube.com/watch?v=SpfEQQXBGMQ), [Blog](https://motherduck.com/blog/duckdb-dbt-e2e-data-engineering-project-part-2/))
-- visualization (TODO)
+The project is a monorepo composed of series in 3 parts :
+- Ingestion, under `ingestion` folder ([YouTube video](https://youtu.be/3pLKTmdWDXk?si=ZI9fjoGQ7hHzznOZ), [Blog](https://motherduck.com/blog/duckdb-python-e2e-data-engineering-project-part-1/))
+- transformation, under `transform` folder ([YouTube video](https://www.youtube.com/watch?v=SpfEQQXBGMQ), [Blog](https://motherduck.com/blog/duckdb-dbt-e2e-data-engineering-project-part-2/))
+- Visualization, under `dashboard` folder ([YouTube video](https://youtu.be/ta_Pzc2EEEo))
 
 ## High level architecture
 ![High level architecture](./docs/etl_architecture.png)
@@ -18,8 +18,9 @@ The project is composed of series in 3 parts :
 The project requires :
 * Python 3.11
 * Poetry for dependency management.
+* Nodejs (only for the visualization part)
 
-There's also a [devcontainer](https://code.visualstudio.com/docs/devcontainers/containers) for VSCode.
+There's also two [devcontainers](https://code.visualstudio.com/docs/devcontainers/containers) definitions for VSCode : one for Python, and one for NodeJS.
 Finally a `Makefile` is available to run common tasks.
 
 ### Env & credentials
@@ -79,3 +80,22 @@ You can then run the following commands :
 * `make pypi-transform START_DATE=2023-04-05 END_DATE=2023-04-07 DBT_TARGET=dev` : example of a run reading from AWS S3 and writing to AWS S3
 * `make pypi-transform START_DATE=2023-04-05 END_DATE=2023-04-07 DBT_TARGET=prod` : example of a run reading from AWS S3 and writing to MotherDuck
 * `make pypi-transform-test` : run the unit tests located in `/transform/pypi_metrics/tests`
+
+## Visualization - Dashboard
+
+The visualization part is using [Evidence framework](https://evidence.dev/) to create a dashboard. 
+It's a NodeJS project that uses the data from the transformation pipeline, stored on [MotherDuck](https://app.motherduck.com/).
+You can also use the available MotherDuck [shared database](https://motherduck.com/docs/key-tasks/sharing-data/) (including data from `duckdb` pypi project)
+
+### Accessing the shared MotherDuck database
+To access the dataset, you only need to create a free account on [MotherDuck](https://app.motherduck.com/), and then you can access the shared database by using the following `ATTACH` url, to be run in your DuckDB client (Python, CLI, etc.):
+
+```
+ATTACH 'md:_share/duckdb_stats/507a3c5f-e611-4899-b858-043ce733b57c'
+```
+
+### Running the dashboard
+To run the dashboard, you need to have NodeJS installed on your machine.
+You can then : 
+- Install the dependencies by running `npm install` in the `dashboard` folder.
+- Run a local server by running `npm run dev` in the `dashboard` folder.
