@@ -69,7 +69,7 @@ jobs:
         run: |
           make pypi-ingest DOCKER=true
       
-transform-pypi-data:
+  transform-pypi-data:
     needs: ingest-pypi-data
     runs-on: ubuntu-latest
 
