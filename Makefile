@@ -11,7 +11,7 @@ DOCKER_IMAGE ?= ghcr.io/$(REPOSITORY)
 TRANSFORM_S3_PATH_INPUT ?= s3://whatever
 
 ifeq ($(DOCKER),true)
-    DOCKER_CMD = docker run --rm -v $(PWD):/app -w /app \
+    DOCKER_CMD = docker run --rm -w /app \
         -v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
         -e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
         -e motherduck_token=$(motherduck_token) \
