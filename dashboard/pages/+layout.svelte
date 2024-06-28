@@ -5,6 +5,6 @@
 	export let data;
 </script>
 
-<EvidenceDefaultLayout {data} hideSidebar={true} logo='logo.png' neverShowQueries={true}>
+<EvidenceDefaultLayout {data} hideSidebar={true} logo='logo.png' githubRepo='https://github.com/mehd-io/pypi-duck-flow' neverShowQueries={true}>
 	<slot slot="content" />
 </EvidenceDefaultLayout>
