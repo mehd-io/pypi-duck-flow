@@ -32,7 +32,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Pull latest Docker image
-        run: docker pull ghcr.io/${{ github.repository }}:latest
+        run: docker pull ghcr.io/mehd-io/pypi-duck-flow@sha256:a5fde1539d179cd44d233dbe60454fc266e0866990eadf2f3b413e2270087172
+      
+      - name: check dbt pakcages deps
+        run: |
+          make list DOCKER=true
       
       - name: check dbt pakcages deps
         run: |
@@ -56,7 +60,7 @@ jobs:
           START_DATE: ${{ env.START_DATE }}
           END_DATE: ${{ env.END_DATE }}
           DBT_TARGET: prod
-          DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
+          DOCKER_IMAGE: ghcr.io/mehd-io/pypi-duck-flow@sha256:a5fde1539d179cd44d233dbe60454fc266e0866990eadf2f3b413e2270087172
           DBT_FOLDER: transform/pypi_metrics
           motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}

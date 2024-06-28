@@ -1,8 +1,8 @@
 -include .env
 export
 
-REPOSITORY=mehd-io/pypi-duck-flow
-DBT_FOLDER = transform/pypi_metrics/
+REPOSITORY=mehd-io/pypi-duck-flow@sha256:a5fde1539d179cd44d233dbe60454fc266e0866990eadf2f3b413e2270087172
+DBT_FOLDER = transform/pypi_metrics
 DBT_TARGET = dev
 DBT_DATA_SOURCE = motherduck
 DOCKER ?= false
@@ -52,6 +52,9 @@ pypi-transform-test:
 
 list-deps:
 	$(DOCKER_CMD) ls transform/pypi_metrics/dbt_packages
+
+list: 
+	$(DOCKER_CMD) ls
 
 ## Docker 
 build:
