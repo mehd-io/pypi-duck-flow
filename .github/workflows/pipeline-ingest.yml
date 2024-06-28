@@ -7,6 +7,8 @@ on:
   push:
       branches:
         - fix/ci-pipeline
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       start_date:
