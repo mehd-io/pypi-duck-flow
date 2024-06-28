@@ -4,6 +4,9 @@ permissions:
   id-token: write
 
 on:
+  push:
+      branches:
+        - fix/ci-pipeline
   workflow_dispatch:
     inputs:
       start_date:
@@ -64,6 +67,17 @@ jobs:
         run: |
           make pypi-ingest DOCKER=true
       
+transform-pypi-data:
+    needs: ingest-pypi-data
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Pull latest Docker image
+        run: docker pull ghcr.io/${{ github.repository }}:latest
+
       - name: Transform pypi data using dbt
         env:
           START_DATE: ${{ env.START_DATE }}
@@ -73,4 +87,4 @@ jobs:
           motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
         run: |
-          make pypi-transform DOCKER=true
+          make pypi-transform DOCKER=true DBT_TARGET=prod
