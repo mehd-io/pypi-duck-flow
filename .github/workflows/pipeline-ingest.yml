@@ -78,4 +78,4 @@ jobs:
           motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
         run: |
-          make pypi-transform DOCKER=true
+          make pypi-transform DOCKER=true DBT_TARGET=${DBT_TARGET}
