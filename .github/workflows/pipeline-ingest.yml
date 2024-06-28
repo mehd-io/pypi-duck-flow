@@ -24,6 +24,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+            sparse-checkout: |
+              Makefile
+            sparse-checkout-cone-mode: false
+
       
       - id: 'auth'
         name: 'Authenticate to GCP'
