@@ -4,11 +4,6 @@ permissions:
   id-token: write
 
 on:
-  push:
-      branches:
-        - fix/ingest-pipelines
-  pull_request:
-    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       start_date:
