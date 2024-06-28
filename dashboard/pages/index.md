@@ -2,7 +2,6 @@
 title: DuckDB 🦆 - Python 🐍 downloads
 ---
 
-
 ## How Many People Downloaded DuckDB ?
 
 <BigValue 
@@ -24,6 +23,12 @@ title: DuckDB 🦆 - Python 🐍 downloads
     data={count_over_month} 
     value='weekly_download_sum' 
     fmt='#,##0.00,,"M"'	
+/>
+
+<BigValue 
+  title='Data last updated on'
+  data={last_refresh_date} 
+  value=max_date
 />
 
 ## Download Over Months
@@ -172,8 +177,23 @@ ORDER BY
 limit 10
 ```
 
+```sql last_refresh_date
+select max_date from motherduck.refresh_date
+```
+
 ## Build Your Own Insights on Any Python Package
 This dashboard is powered by [Evidence](https://evidence.dev/), [DuckDB](https://duckdb.org/), and [MotherDuck](https://motherduck.com/). You can find the code for this dashboard on [GitHub](https://github.com/mehd-io/pypi-duck-flow), along with [tutorials](https://www.youtube.com/watch?v=3pLKTmdWDXk) and examples to help you build your own dashboards.
 
+## Accessing the raw data
+You can query the raw data directly from any DuckDB client. Here's what you need : 
+1) A MotherDuck account : sign-up for free at [MotherDuck](https://app.motherduck.com/)
+2) Attach the [shared database to your workspace](https://motherduck.com/docs/getting-started/sample-data-queries/pypi)
+
+```bash
+ATTACH 'md:_share/duckdb_stats/507a3c5f-e611-4899-b858-043ce733b57c' AS duckdb_stats;
+```
 
 *Made with ❤️ by 🧢 [mehdio](https://www.linkedin.com/in/mehd-io/)*
+
+
+
