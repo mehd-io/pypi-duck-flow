@@ -50,6 +50,9 @@ pypi-transform-test:
 		--profiles-dir $$DBT_FOLDER \
 		--vars '{"start_date": "2023-04-01", "end_date": "2023-04-03"}' 
 
+list-deps:
+	$(DOCKER_CMD) ls transform/pypi_metrics/dbt_packages
+
 ## Docker 
 build:
 	docker build --label org.opencontainers.image.source=https://github.com/$(GITHUB_REPOSITORY) -t $(DOCKER_IMAGE) --build-arg PLATFORM=arm64 .
