@@ -1,7 +1,9 @@
 # Pypi Duck Flow : Get insights of your python project 🐍
 
 This project is a collections of pipelines to get insights of your python project. It also serves as educational purpose (YouTube videos and blogs) to learn how to build data pipelines with **Python**, **SQL** & **DuckDB**.
-You can see the final result of the project in this [dashboard](http://duckdbstats.com/).
+You can see the final result of the project in this live [dashboard](http://duckdbstats.com/).
+
+![demo](./docs/demo_dashboard.gif)
 
 The project is a monorepo composed of series in 3 parts :
 - Ingestion, under `ingestion` folder ([YouTube video](https://youtu.be/3pLKTmdWDXk?si=ZI9fjoGQ7hHzznOZ), [Blog](https://motherduck.com/blog/duckdb-python-e2e-data-engineering-project-part-1/))
@@ -10,7 +12,6 @@ The project is a monorepo composed of series in 3 parts :
 
 ## High level architecture
 ![High level architecture](./docs/etl_architecture.png)
-
 
 ## Development
 
