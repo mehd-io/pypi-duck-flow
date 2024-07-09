@@ -45,10 +45,10 @@ pypi-transform:
 # Note : start_date and end_date depends on the mock data in the test
 pypi-transform-test:
 	$(DOCKER_CMD) dbt test \
-		--target $$DBT_TARGET \
+		--target dev \
 		--project-dir $$DBT_FOLDER \
 		--profiles-dir $$DBT_FOLDER \
-		--vars '{"start_date": "2023-04-01", "end_date": "2023-04-03"}' 
+		--vars '{"start_date": "2023-04-01", "end_date": "2023-04-03", "data_source": "external_source"}' 
 
 ## Docker 
 build:
