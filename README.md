@@ -8,7 +8,7 @@ You can see the final result of the project in this live [dashboard](http://duck
 The project is a monorepo composed of series in 3 parts :
 - Ingestion, under `ingestion` folder ([YouTube video](https://youtu.be/3pLKTmdWDXk?si=ZI9fjoGQ7hHzznOZ), [Blog](https://motherduck.com/blog/duckdb-python-e2e-data-engineering-project-part-1/))
 - transformation, under `transform` folder ([YouTube video](https://www.youtube.com/watch?v=SpfEQQXBGMQ), [Blog](https://motherduck.com/blog/duckdb-dbt-e2e-data-engineering-project-part-2/))
-- Visualization, under `dashboard` folder ([YouTube video](https://youtu.be/ta_Pzc2EEEo))
+- Visualization, under `dashboard` folder ([YouTube video](https://youtu.be/ta_Pzc2EEEo)), [Blog](https://motherduck.com/blog/duckdb-dashboard-e2e-data-engineering-project-part-3/)
 
 ## High level architecture
 ![High level architecture](./docs/etl_architecture.png)
