@@ -1,23 +1,16 @@
 import pytest
 from datetime import datetime
 import pyarrow as pa
-from ingestion.motherduck import SchemaBaseModel
+from ingestion.motherduck import SchemaBaseModel  # Update with the actual module path
 
-
-# Unit test for SchemaBaseModel
 class TestSchemaBaseModel:
     def test_generate_load_id(self):
-        # Define a simple model extending SchemaBaseModel
         class MyModel(SchemaBaseModel):
             my_field: str
 
-        # Create an instance of the model
         model_instance = MyModel(my_field="test_value")
-
-        # Generate the load_id
         generated_id = model_instance.generate_load_id()
 
-        # Check that the load_id is not None and is a string of length 64 (SHA-256 hash)
         assert generated_id is not None
         assert isinstance(generated_id, str)
         assert len(generated_id) == 64
@@ -34,11 +27,11 @@ class TestSchemaBaseModel:
             my_int: int
 
         expected_schema = (
-            "CREATE TABLE IF NOT EXISTS my_model (\n    "
-            "load_id VARCHAR,\n    "
-            "load_timestamp TIMESTAMP,\n    "
-            "my_field VARCHAR,\n    "
-            "my_int BIGINT, PRIMARY KEY (load_id)\n)"
+            'CREATE TABLE IF NOT EXISTS my_model (\n    '
+            '"load_id" VARCHAR,\n    '
+            '"load_timestamp" TIMESTAMP,\n    '
+            '"my_field" VARCHAR,\n    '
+            '"my_int" BIGINT, PRIMARY KEY ("load_id")\n)'
         )
         assert MyModel.get_duckdb_schema(primary_key="load_id") == expected_schema
 
@@ -53,6 +46,41 @@ class TestSchemaBaseModel:
                 pa.field("load_timestamp", pa.timestamp("ns")),
                 pa.field("my_field", pa.string()),
                 pa.field("my_int", pa.int64()),
+            ]
+        )
+        assert MyModel.get_pyarrow_schema() == expected_schema
+
+    def test_nested_structures_duckdb_schema(self):
+        class NestedModel(SchemaBaseModel):
+            nested_field: str
+
+        class MyModel(SchemaBaseModel):
+            my_field: str
+            nested_model: NestedModel
+
+        expected_schema = (
+            'CREATE TABLE IF NOT EXISTS my_model (\n    '
+            '"load_id" VARCHAR,\n    '
+            '"load_timestamp" TIMESTAMP,\n    '
+            '"my_field" VARCHAR,\n    '
+            '"nested_model" STRUCT("nested_field" VARCHAR), PRIMARY KEY ("load_id")\n)'
+        )
+        assert MyModel.get_duckdb_schema(primary_key="load_id") == expected_schema
+
+    def test_nested_structures_pyarrow_schema(self):
+        class NestedModel(SchemaBaseModel):
+            nested_field: str
+
+        class MyModel(SchemaBaseModel):
+            my_field: str
+            nested_model: NestedModel
+
+        expected_schema = pa.schema(
+            [
+                pa.field("load_id", pa.string()),
+                pa.field("load_timestamp", pa.timestamp("ns")),
+                pa.field("my_field", pa.string()),
+                pa.field("nested_model", pa.struct([pa.field("nested_field", pa.string())]))
             ]
         )
         assert MyModel.get_pyarrow_schema() == expected_schema

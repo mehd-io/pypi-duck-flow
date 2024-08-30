@@ -2,85 +2,108 @@ from loguru import logger
 import duckdb
 import os
 import pyarrow as pa
-from typing import ClassVar, Type
-import re
 from pydantic import BaseModel, Field
 from datetime import datetime
 import hashlib
+import re
+from typing import ClassVar, Dict, Any, Type, Optional, get_origin
 
-
-def camel_to_snake(name):
+def camel_to_snake(name: str) -> str:
+    """Converts CamelCase to snake_case."""
     name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
-
 class SchemaBaseModel(BaseModel):
-    load_id: str = None
-    load_timestamp: datetime = Field(default_factory=datetime.now)
+    load_id: str = Field(default=None, alias="load_id")
+    load_timestamp: datetime = Field(default_factory=datetime.now, alias="load_timestamp")
 
-    duckdb_type_mapping: ClassVar[dict] = {
+    duckdb_type_mapping: ClassVar[Dict[Any, str]] = {
         datetime: "TIMESTAMP",
         int: "BIGINT",
         float: "DOUBLE",
         str: "VARCHAR",
         bool: "BOOLEAN",
+        Optional[datetime]: "TIMESTAMP",
+        Optional[int]: "BIGINT",
+        Optional[float]: "DOUBLE",
+        Optional[str]: "VARCHAR",
+        Optional[bool]: "BOOLEAN",
     }
 
-    arrow_type_mapping: ClassVar[dict] = {
+    arrow_type_mapping: ClassVar[Dict[Any, Any]] = {
         datetime: pa.timestamp("ns"),
         int: pa.int64(),
         float: pa.float64(),
         str: pa.string(),
         bool: pa.bool_(),
+        Optional[datetime]: pa.timestamp("ns"),
+        Optional[int]: pa.int64(),
+        Optional[float]: pa.float64(),
+        Optional[str]: pa.string(),
+        Optional[bool]: pa.bool_(),
     }
 
     def __init__(self, **data):
         super().__init__(**data)
-        if "load_id" not in data or data["load_id"] is None:
+        if not self.load_id:
             self.load_id = self.generate_load_id()
 
     @classmethod
     def get_ordered_fields(cls):
-        """
-        Avoid mismatch between the order of fields in the model and the order of fields in the database.
-        """
-        return [(name, field) for name, field in cls.__fields__.items()]
+        """Returns ordered fields to ensure consistency between model and DB schema."""
+        return [(name, field) for name, field in cls.model_fields.items()]
 
     @classmethod
     def get_duckdb_schema(cls, primary_key: str = None) -> str:
+        """Generates the DuckDB table schema."""
         table_name = cls.get_table_name()
-        fields = [
-            f"{name} {cls.duckdb_type_mapping.get(field.annotation, 'VARCHAR')}"
-            for name, field in cls.get_ordered_fields()
-        ]
-        primary_key_clause = f", PRIMARY KEY ({primary_key})" if primary_key else ""
-        query = (
-            f"CREATE TABLE IF NOT EXISTS {table_name} (\n    "
+        fields = []
+        for name, field in cls.model_fields.items():
+            field_type = cls.duckdb_type_mapping.get(
+                get_origin(field.annotation) or field.annotation, 'VARCHAR'
+            )
+            if field.alias is None:
+                field_alias = name
+            else:
+                field_alias = field.alias
+            fields.append(f'"{field_alias}" {field_type}')
+        primary_key_clause = f', PRIMARY KEY ("{primary_key}")' if primary_key else ""
+        return (
+            f'CREATE TABLE IF NOT EXISTS {table_name} (\n    '
             + ",\n    ".join(fields)
             + primary_key_clause
             + "\n)"
         )
-        return query
 
     @classmethod
     def get_pyarrow_schema(cls):
-        fields = [
-            pa.field(name, cls.arrow_type_mapping.get(field.annotation, pa.string()))
-            for name, field in cls.get_ordered_fields()
-        ]
+        """Generates the PyArrow schema."""
+        fields = []
+        for name, field in cls.model_fields.items():
+            field_type = cls.arrow_type_mapping.get(
+                get_origin(field.annotation) or field.annotation, pa.string()
+            )
+            if field_type is None:
+                field_type = pa.string()  # Fallback to pa.string()
+            if field.alias is None:
+                field_alias = name
+            else:
+                field_alias = field.alias
+            fields.append(pa.field(field_alias, field_type))
         return pa.schema(fields)
 
     @classmethod
     def get_table_name(cls) -> str:
+        """Returns the table name derived from the model's class name."""
         return camel_to_snake(cls.__name__)
 
-    def generate_load_id(self, exclude_fields=("load_id", "load_timestamp")):
+    def generate_load_id(self, exclude_fields=("load_id", "load_timestamp")) -> str:
+        """Generates a unique load ID based on the model's fields."""
         hash_input = [
-            str(getattr(self, f)) for f in self.__fields__ if f not in exclude_fields
+            str(getattr(self, field)) for field in self.model_fields if field not in exclude_fields
         ]
         row_str = "".join(hash_input)
         return hashlib.sha256(row_str.encode("utf-8")).hexdigest()
-
 
 class ArrowTableLoadingBuffer:
     """
