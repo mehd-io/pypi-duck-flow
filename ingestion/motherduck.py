@@ -14,7 +14,7 @@ class ArrowTableLoadingBuffer:
         dryrun: bool = False,
         destination="local",
     ):
-        self.duckdb_schema = duckdb_schema
+        self.duckdb_schema = duckdb_schema        
         self.pyarrow_schema = pyarrow_schema
         self.dryrun = dryrun
         self.database_name = database_name
@@ -32,12 +32,12 @@ class ArrowTableLoadingBuffer:
                     "MotherDuck token is required. Set the environment variable 'MOTHERDUCK_TOKEN'."
                 )
             conn = duckdb.connect("md:")
-            conn.execute(f"USE {self.database_name}")
             if not self.dryrun:
                 logger.info(
                     f"Creating database {self.database_name} if it doesn't exist"
                 )
                 conn.execute(f"CREATE DATABASE IF NOT EXISTS {self.database_name}")
+                conn.execute(f"USE {self.database_name}")
         else:
             conn = duckdb.connect(database=f"{self.database_name}.db")
         if not self.dryrun:

@@ -81,7 +81,7 @@ class FileDownloads(BaseModel):
     def pyarrow_schema(cls):
         return pa.schema(
             [
-                pa.field("timestamp", pa.timestamp("ms", tz="UTC")),
+                pa.field("timestamp", pa.timestamp("us", tz="UTC")),
                 pa.field("country_code", pa.string()),
                 pa.field("url", pa.string()),
                 pa.field("project", pa.string()),
