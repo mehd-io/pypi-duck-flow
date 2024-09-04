@@ -1,11 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import List, Union, Annotated, Type
-from pydantic import BaseModel, ValidationError
-from datetime import datetime
-from typing import Optional, Dict
+from typing import Type
 import pyarrow as pa
-
-DUCKDB_EXTENSION = ["aws", "httpfs"]
+from pydantic import BaseModel, Field, ValidationError
+from datetime import datetime
+from typing import Optional, Dict, Union, List, Annotated
 
 
 class File(BaseModel):
@@ -65,6 +62,67 @@ class FileDownloads(BaseModel):
     tls_protocol: Optional[str] = None
     tls_cipher: Optional[str] = None
 
+    @classmethod
+    def duckdb_ddl_file_downloads(cls, table_name="pypi_file_downloads"):
+        return f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            timestamp TIMESTAMP WITH TIME ZONE,
+            country_code VARCHAR,
+            url VARCHAR,
+            project VARCHAR,
+            file STRUCT("filename" VARCHAR, "project" VARCHAR, "version" VARCHAR, "type" VARCHAR),
+            details STRUCT("installer" STRUCT("name" VARCHAR, "version" VARCHAR), "python" VARCHAR, "implementation" STRUCT("name" VARCHAR, "version" VARCHAR), "distro" STRUCT("name" VARCHAR, "version" VARCHAR, "id" VARCHAR, "libc" STRUCT("lib" VARCHAR, "version" VARCHAR)), "system" STRUCT("name" VARCHAR, "release" VARCHAR), "cpu" VARCHAR, "openssl_version" VARCHAR, "setuptools_version" VARCHAR, "rustc_version" VARCHAR, "ci" BOOLEAN),
+            tls_protocol VARCHAR,
+            tls_cipher VARCHAR
+        )
+        """
+    
+    @classmethod
+    def pyarrow_schema(cls):
+        return pa.schema([
+            pa.field("timestamp", pa.timestamp("ms", tz="UTC")),
+            pa.field("country_code", pa.string()),
+            pa.field("url", pa.string()),
+            pa.field("project", pa.string()),
+            pa.field("file", pa.struct([
+                pa.field("filename", pa.string()),
+                pa.field("project", pa.string()),
+                pa.field("version", pa.string()),
+                pa.field("type", pa.string())
+            ])),
+            pa.field("details", pa.struct([
+                pa.field("installer", pa.struct([
+                    pa.field("name", pa.string()),
+                    pa.field("version", pa.string())
+                ])),
+                pa.field("python", pa.string()),
+                pa.field("implementation", pa.struct([
+                    pa.field("name", pa.string()),
+                    pa.field("version", pa.string())
+                ])),
+                pa.field("distro", pa.struct([
+                    pa.field("name", pa.string()),
+                    pa.field("version", pa.string()),
+                    pa.field("id", pa.string()),
+                    pa.field("libc", pa.struct([
+                        pa.field("lib", pa.string()),
+                        pa.field("version", pa.string())
+                    ]))
+                ])),
+                pa.field("system", pa.struct([
+                    pa.field("name", pa.string()),
+                    pa.field("release", pa.string())
+                ])),
+                pa.field("cpu", pa.string()),
+                pa.field("openssl_version", pa.string()),
+                pa.field("setuptools_version", pa.string()),
+                pa.field("rustc_version", pa.string()),
+                pa.field("ci", pa.bool_())
+            ])),
+            pa.field("tls_protocol", pa.string()),
+            pa.field("tls_cipher", pa.string())
+        ])
+
 
 class PypiJobParameters(BaseModel):
     start_date: str = "2019-04-01"
@@ -109,18 +167,3 @@ def validate_table(table: pa.Table, model: Type[BaseModel]):
         raise TableValidationError(
             f"Table validation failed with the following errors:\n{error_message}"
         )
-
-
-def duckdb_ddl_file_downloads(table_name="pypi_file_downloads"):
-    return f"""
-    CREATE TABLE IF NOT EXISTS {table_name} (
-        timestamp TIMESTAMP WITH TIME ZONE,
-        country_code VARCHAR,
-        url VARCHAR,
-        project VARCHAR,
-        file STRUCT("filename" VARCHAR, "project" VARCHAR, "version" VARCHAR, "type" VARCHAR),
-        details STRUCT("installer" STRUCT("name" VARCHAR, "version" VARCHAR), "python" VARCHAR, "implementation" STRUCT("name" VARCHAR, "version" VARCHAR), "distro" STRUCT("name" VARCHAR, "version" VARCHAR, "id" VARCHAR, "libc" STRUCT("lib" VARCHAR, "version" VARCHAR)), "system" STRUCT("name" VARCHAR, "release" VARCHAR), "cpu" VARCHAR, "openssl_version" VARCHAR, "setuptools_version" VARCHAR, "rustc_version" VARCHAR, "ci" BOOLEAN),
-        tls_protocol VARCHAR,
-        tls_cipher VARCHAR
-    )
-    """
