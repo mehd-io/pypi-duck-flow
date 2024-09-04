@@ -61,8 +61,10 @@ class TestArrowTableLoadingBufferIntegration:
             'load_timestamp': pa.array([datetime.now()], type=pa.timestamp('ns'))
         }, schema=buffer.pyarrow_schema)
         
-        buffer.insert(data2)  # Should trigger flush
-        
+        buffer.insert(data2)
+        # should trigger an insert
+        buffer.flush()
+
         # Verify data was flushed into DuckDB
         result = buffer.conn.execute("SELECT * FROM test_table").fetchall()
         assert len(result) == 3  # Expect 3 rows (2 from data1 and 1 from data2)
