@@ -63,7 +63,7 @@ class FileDownloads(BaseModel):
     tls_cipher: Optional[str] = None
 
     @classmethod
-    def duckdb_ddl_file_downloads(cls, table_name="pypi_file_downloads"):
+    def duckdb_schema(cls, table_name="pypi_file_downloads"):
         return f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             timestamp TIMESTAMP WITH TIME ZONE,
@@ -76,52 +76,89 @@ class FileDownloads(BaseModel):
             tls_cipher VARCHAR
         )
         """
-    
+
     @classmethod
     def pyarrow_schema(cls):
-        return pa.schema([
-            pa.field("timestamp", pa.timestamp("ms", tz="UTC")),
-            pa.field("country_code", pa.string()),
-            pa.field("url", pa.string()),
-            pa.field("project", pa.string()),
-            pa.field("file", pa.struct([
-                pa.field("filename", pa.string()),
+        return pa.schema(
+            [
+                pa.field("timestamp", pa.timestamp("ms", tz="UTC")),
+                pa.field("country_code", pa.string()),
+                pa.field("url", pa.string()),
                 pa.field("project", pa.string()),
-                pa.field("version", pa.string()),
-                pa.field("type", pa.string())
-            ])),
-            pa.field("details", pa.struct([
-                pa.field("installer", pa.struct([
-                    pa.field("name", pa.string()),
-                    pa.field("version", pa.string())
-                ])),
-                pa.field("python", pa.string()),
-                pa.field("implementation", pa.struct([
-                    pa.field("name", pa.string()),
-                    pa.field("version", pa.string())
-                ])),
-                pa.field("distro", pa.struct([
-                    pa.field("name", pa.string()),
-                    pa.field("version", pa.string()),
-                    pa.field("id", pa.string()),
-                    pa.field("libc", pa.struct([
-                        pa.field("lib", pa.string()),
-                        pa.field("version", pa.string())
-                    ]))
-                ])),
-                pa.field("system", pa.struct([
-                    pa.field("name", pa.string()),
-                    pa.field("release", pa.string())
-                ])),
-                pa.field("cpu", pa.string()),
-                pa.field("openssl_version", pa.string()),
-                pa.field("setuptools_version", pa.string()),
-                pa.field("rustc_version", pa.string()),
-                pa.field("ci", pa.bool_())
-            ])),
-            pa.field("tls_protocol", pa.string()),
-            pa.field("tls_cipher", pa.string())
-        ])
+                pa.field(
+                    "file",
+                    pa.struct(
+                        [
+                            pa.field("filename", pa.string()),
+                            pa.field("project", pa.string()),
+                            pa.field("version", pa.string()),
+                            pa.field("type", pa.string()),
+                        ]
+                    ),
+                ),
+                pa.field(
+                    "details",
+                    pa.struct(
+                        [
+                            pa.field(
+                                "installer",
+                                pa.struct(
+                                    [
+                                        pa.field("name", pa.string()),
+                                        pa.field("version", pa.string()),
+                                    ]
+                                ),
+                            ),
+                            pa.field("python", pa.string()),
+                            pa.field(
+                                "implementation",
+                                pa.struct(
+                                    [
+                                        pa.field("name", pa.string()),
+                                        pa.field("version", pa.string()),
+                                    ]
+                                ),
+                            ),
+                            pa.field(
+                                "distro",
+                                pa.struct(
+                                    [
+                                        pa.field("name", pa.string()),
+                                        pa.field("version", pa.string()),
+                                        pa.field("id", pa.string()),
+                                        pa.field(
+                                            "libc",
+                                            pa.struct(
+                                                [
+                                                    pa.field("lib", pa.string()),
+                                                    pa.field("version", pa.string()),
+                                                ]
+                                            ),
+                                        ),
+                                    ]
+                                ),
+                            ),
+                            pa.field(
+                                "system",
+                                pa.struct(
+                                    [
+                                        pa.field("name", pa.string()),
+                                        pa.field("release", pa.string()),
+                                    ]
+                                ),
+                            ),
+                            pa.field("cpu", pa.string()),
+                            pa.field("openssl_version", pa.string()),
+                            pa.field("setuptools_version", pa.string()),
+                            pa.field("rustc_version", pa.string()),
+                            pa.field("ci", pa.bool_()),
+                        ]
+                    ),
+                ),
+                pa.field("tls_protocol", pa.string()),
+                pa.field("tls_cipher", pa.string()),
+            ]
+        )
 
 
 class PypiJobParameters(BaseModel):

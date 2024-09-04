@@ -1,7 +1,8 @@
 import duckdb
 import os
 import pyarrow as pa
-from datetime import datetime
+from loguru import logger
+
 
 class ArrowTableLoadingBuffer:
     def __init__(
@@ -17,7 +18,7 @@ class ArrowTableLoadingBuffer:
         self.pyarrow_schema = pyarrow_schema
         self.dryrun = dryrun
         self.database_name = database_name
-        self.table_name = table_name 
+        self.table_name = table_name
         self.accumulated_data = pa.Table.from_batches([], schema=pyarrow_schema)
         self.total_inserted = 0
         self.conn = self.initialize_connection(destination, duckdb_schema)
@@ -25,7 +26,7 @@ class ArrowTableLoadingBuffer:
 
     def initialize_connection(self, destination, sql):
         if destination == "md":
-            print("Connecting to MotherDuck...")
+            logger.info("Connecting to MotherDuck...")
             if not os.environ.get("motherduck_token"):
                 raise ValueError(
                     "MotherDuck token is required. Set the environment variable 'MOTHERDUCK_TOKEN'."
@@ -33,12 +34,13 @@ class ArrowTableLoadingBuffer:
             conn = duckdb.connect("md:")
             conn.execute(f"USE {self.database_name}")
             if not self.dryrun:
-                print(f"Creating database {self.database_name} if it doesn't exist")
+                logger.info(
+                    f"Creating database {self.database_name} if it doesn't exist"
+                )
                 conn.execute(f"CREATE DATABASE IF NOT EXISTS {self.database_name}")
         else:
             conn = duckdb.connect(database=f"{self.database_name}.db")
         if not self.dryrun:
-            print(sql)
             conn.execute(sql)
         return conn
 
@@ -58,9 +60,15 @@ class ArrowTableLoadingBuffer:
                 INSERT OR REPLACE INTO {self.table_name} SELECT * FROM buffer_table
                 """
             else:
-                insert_query = f"INSERT INTO {self.table_name} SELECT * FROM buffer_table"
+                insert_query = (
+                    f"INSERT INTO {self.table_name} SELECT * FROM buffer_table"
+                )
             self.conn.execute(insert_query)
             self.conn.unregister("buffer_table")
             self.total_inserted += self.accumulated_data.num_rows
-            print(f"Flushed {self.accumulated_data.num_rows} records to the database.")
-            self.accumulated_data = pa.Table.from_batches([], schema=self.accumulated_data.schema)
+            logger.info(
+                f"Flushed {self.accumulated_data.num_rows} records to the database."
+            )
+            self.accumulated_data = pa.Table.from_batches(
+                [], schema=self.accumulated_data.schema
+            )

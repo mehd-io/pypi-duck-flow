@@ -10,9 +10,8 @@ from ingestion.duck import (
     create_table_from_dataframe,
     load_aws_credentials,
     write_to_s3_from_duckdb,
-    write_to_md_from_duckdb,
-    connect_to_md,
 )
+from motherduck import ArrowTableLoadingBuffer
 import fire
 from ingestion.models import (
     validate_table,
@@ -51,16 +50,18 @@ def main(params: PypiJobParameters):
         )
 
     if "md" in params.destination:
-        connect_to_md(conn, os.environ["motherduck_token"])
-        write_to_md_from_duckdb(
-            duckdb_con=conn,
-            table=f"{params.table_name}",
-            local_database="memory",
-            remote_database="duckdb_stats",
-            timestamp_column=params.timestamp_column,
-            start_date=params.start_date,
-            end_date=params.end_date,
+        # Initialize ArrowTableLoadingBuffer
+        buffer = ArrowTableLoadingBuffer(
+            duckdb_schema=FileDownloads.duckdb_ddl_file_downloads(params.table_name),
+            pyarrow_schema=FileDownloads.pyarrow_schema(),
+            database_name="duckdb_stats",
+            table_name=params.table_name,
+            dryrun=False,
+            destination=params.destination,
         )
+        buffer.insert(pa_tbl)
+        # making sure all the data is flushed
+        buffer.flush()
     end_time = datetime.now()
     elapsed = (end_time - start_time).total_seconds()
     logger.info(
