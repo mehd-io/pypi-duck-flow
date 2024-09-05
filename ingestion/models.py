@@ -2,7 +2,9 @@ from typing import Type
 import pyarrow as pa
 from pydantic import BaseModel, Field, ValidationError
 from datetime import datetime
-from typing import Optional, Dict, Union, List, Annotated
+from typing import Optional, Union, List, Annotated
+import hashlib
+import json
 
 
 class File(BaseModel):
@@ -61,6 +63,24 @@ class FileDownloads(BaseModel):
     details: Optional[Details] = None
     tls_protocol: Optional[str] = None
     tls_cipher: Optional[str] = None
+    load_id: Optional[str] = None
+    load_timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+    def generate_load_id(self):
+        # Create a dictionary of all fields except load_id and load_timestamp
+        fields_dict = {
+            k: v
+            for k, v in self.dict().items()
+            if k not in ["load_id", "load_timestamp"]
+        }
+        # Convert to a JSON string for consistent ordering
+        fields_json = json.dumps(fields_dict, sort_keys=True, default=str)
+        # Generate SHA256 hash
+        return hashlib.sha256(fields_json.encode()).hexdigest()
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.load_id = self.generate_load_id()
 
     @classmethod
     def duckdb_schema(cls, table_name="pypi_file_downloads"):
@@ -73,7 +93,9 @@ class FileDownloads(BaseModel):
             file STRUCT("filename" VARCHAR, "project" VARCHAR, "version" VARCHAR, "type" VARCHAR),
             details STRUCT("installer" STRUCT("name" VARCHAR, "version" VARCHAR), "python" VARCHAR, "implementation" STRUCT("name" VARCHAR, "version" VARCHAR), "distro" STRUCT("name" VARCHAR, "version" VARCHAR, "id" VARCHAR, "libc" STRUCT("lib" VARCHAR, "version" VARCHAR)), "system" STRUCT("name" VARCHAR, "release" VARCHAR), "cpu" VARCHAR, "openssl_version" VARCHAR, "setuptools_version" VARCHAR, "rustc_version" VARCHAR, "ci" BOOLEAN),
             tls_protocol VARCHAR,
-            tls_cipher VARCHAR
+            tls_cipher VARCHAR,
+            load_id VARCHAR,
+            load_timestamp TIMESTAMP WITH TIME ZONE
         )
         """
 
@@ -157,6 +179,8 @@ class FileDownloads(BaseModel):
                 ),
                 pa.field("tls_protocol", pa.string()),
                 pa.field("tls_cipher", pa.string()),
+                pa.field("load_id", pa.string()),
+                pa.field("load_timestamp", pa.timestamp("us", tz="UTC")),
             ]
         )
 
