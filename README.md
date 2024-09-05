@@ -39,7 +39,7 @@ PYPI_PROJECT=duckdb # pypi project to ingest
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/my/creds # path to GCP credentials
 motherduck_token=123123 # MotherDuck token
 TIMESTAMP_COLUMN=timestamp # timestamp column name, use for partitions on S#
-DESTINATION=local,s3,md # destinations to push data to, can be one or more
+DESTINATION=local # destinations to push data to local will be local duckdb, md motherduck or s3 for s3.
 TRANSFORM_S3_PATH_INPUT=s3://my-input-bucket/pypi_file_downloads/*/*/*.parquet # For transform pipeline, input source data
 TRANSFORM_S3_PATH_OUTPUT=s3://my-output-bucket/ # For transform pipeline, output source if putting data to s3
 ```

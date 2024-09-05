@@ -2,10 +2,7 @@
 import duckdb
 import os
 import pyarrow as pa
-import pyarrow.compute as pc
 from loguru import logger
-import hashlib
-from datetime import datetime
 
 
 class ArrowTableLoadingBuffer:
@@ -29,28 +26,6 @@ class ArrowTableLoadingBuffer:
         self.conn = self.initialize_connection(destination, duckdb_schema)
         self.primary_key_exists = "PRIMARY KEY" in duckdb_schema.upper()
         self.flush_threshold = flush_threshold
-        self.load_id = None
-        self.load_timestamp = None
-
-
-    def _generate_load_id(self, table: pa.Table) -> str:
-        hasher = hashlib.sha256()
-        for column in table.columns:
-            hasher.update(column.to_string().encode())
-        return hasher.hexdigest()
-
-    def _add_load_metadata(self, table: pa.Table) -> pa.Table:
-        if self.load_id is None:
-            self.load_id = self._generate_load_id(table)
-        if self.load_timestamp is None:
-            self.load_timestamp = datetime.now()
-
-        num_rows = len(table)
-        load_id_array = pa.array([self.load_id] * num_rows, type=pa.string())
-        load_timestamp_array = pa.array([self.load_timestamp] * num_rows, type=pa.timestamp('us', tz='UTC'))
-
-        return table.append_column('load_id', load_id_array).append_column('load_timestamp', load_timestamp_array)
-
 
     def initialize_connection(self, destination, sql):
         if destination == "md":
@@ -73,21 +48,19 @@ class ArrowTableLoadingBuffer:
         return conn
 
     def insert(self, table: pa.Table):
-        # Add metadata columns to the incoming table
-        table_with_metadata = self._add_metadata_columns(table)
-        
-        if self.accumulated_data is None:
-            # If this is the first insertion, just use the table with metadata
-            self.accumulated_data = table_with_metadata
+        if self.accumulated_data is None or len(self.accumulated_data) == 0:
+            self.accumulated_data = table
         else:
             # Ensure the schemas match before concatenating
-            self.accumulated_data = pa.concat_tables([
-                self.accumulated_data,
-                table_with_metadata.cast(self.accumulated_data.schema)
-            ])
-        
+            target_schema = self.accumulated_data.schema
+            table = table.select(target_schema.names)
+            self.accumulated_data = pa.concat_tables([self.accumulated_data, table])
+
         # Check if we need to flush
-        if self.accumulated_data.num_rows >= self.row_group_size:
+        if self.accumulated_data.num_rows >= self.flush_threshold:
+            logger.info(
+                f"Flushing {self.accumulated_data.num_rows} records to the database."
+            )
             self.flush()
 
     def flush_if_needed(self):

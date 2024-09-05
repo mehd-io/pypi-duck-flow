@@ -3,21 +3,17 @@ from ingestion.bigquery import (
     get_bigquery_result,
     build_pypi_query,
 )
-import duckdb
 from datetime import datetime
 from loguru import logger
-from ingestion.duck import (
-    load_aws_credentials,
-    write_to_s3_from_duckdb,
-)
-from ingestion.motherduck import ArrowTableLoadingBuffer
+from ingestion.duck import ArrowTableLoadingBuffer
 import fire
 from ingestion.models import (
     validate_table,
     FileDownloads,
     PypiJobParameters,
 )
-import os
+
+DATABASE_NAME = "duckdb_stats_tmp_3"
 
 
 def main(params: PypiJobParameters):
@@ -28,23 +24,40 @@ def main(params: PypiJobParameters):
         bigquery_client=get_bigquery_client(project_name=params.gcp_project),
         model=FileDownloads,
     )
-    validate_table(pa_tbl, FileDownloads)    
+    validate_table(pa_tbl, FileDownloads)
     # Loading to DuckDB
     logger.info(f"Sinking data to {params.destination}")
+    # Determine the initial destination (local or md)
+    initial_destination = "local" if params.destination == "s3" else params.destination
+    logger.info(f"Initial data sink: {initial_destination}")
 
-    if "md" in params.destination:
-        # Initialize ArrowTableLoadingBuffer
-        buffer = ArrowTableLoadingBuffer(
-            duckdb_schema=FileDownloads.duckdb_schema(params.table_name),
-            pyarrow_schema=FileDownloads.pyarrow_schema(),
-            database_name="duckdb_stats_tmp",
-            table_name=params.table_name,
-            dryrun=False,
-            destination=params.destination,
+    buffer = ArrowTableLoadingBuffer(
+        duckdb_schema=FileDownloads.duckdb_schema(params.table_name),
+        pyarrow_schema=FileDownloads.pyarrow_schema(),
+        database_name=DATABASE_NAME,
+        table_name=params.table_name,
+        dryrun=False,
+        destination=initial_destination,
+    )
+    logger.info(f"Deleting existing data from {params.start_date} to {params.end_date}")
+    delete_query = f"""
+    DELETE FROM {DATABASE_NAME}.main.{params.table_name} 
+    WHERE {params.timestamp_column} BETWEEN '{params.start_date}' AND '{params.end_date}'
+    """
+    buffer.conn.execute(delete_query)
+    logger.info("Existing data deleted")
+
+    buffer.insert(pa_tbl)
+    # making sure all the data is flushed
+    buffer.flush()
+    # If destination is S3, write to S3
+    if params.destination == "s3":
+        logger.info("Writing data to S3")
+        buffer.write_to_s3(
+            s3_path=params.s3_path,
+            timestamp_column=params.timestamp_column,
+            aws_profile=params.aws_profile,
         )
-        buffer.insert(pa_tbl)
-        # making sure all the data is flushed
-        buffer.flush()
     end_time = datetime.now()
     elapsed = (end_time - start_time).total_seconds()
     logger.info(
