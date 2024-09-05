@@ -17,11 +17,11 @@ on:
           - both
       start_date:
         description: 'Start Date'
-        required: false
+        required: true
         default: ''
       end_date:
         description: 'End Date'
-        required: false
+        required: true
         default: ''
   schedule:
     - cron: '0 0 * * *' 
