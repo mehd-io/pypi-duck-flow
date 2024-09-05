@@ -3,24 +3,17 @@ from ingestion.bigquery import (
     get_bigquery_result,
     build_pypi_query,
 )
-import duckdb
 from datetime import datetime
 from loguru import logger
-from ingestion.duck import (
-    create_table_from_dataframe,
-    load_aws_credentials,
-    write_to_s3_from_duckdb,
-    write_to_md_from_duckdb,
-    connect_to_md,
-)
+from ingestion.duck import ArrowTableLoadingBuffer
 import fire
 from ingestion.models import (
     validate_table,
     FileDownloads,
     PypiJobParameters,
-    duckdb_ddl_file_downloads,
 )
-import os
+
+DATABASE_NAME = "duckdb_stats_tmp_3"
 
 
 def main(params: PypiJobParameters):
@@ -33,33 +26,37 @@ def main(params: PypiJobParameters):
     )
     validate_table(pa_tbl, FileDownloads)
     # Loading to DuckDB
-    conn = duckdb.connect()
-    create_table_from_dataframe(
-        duckdb_con=conn,
-        table_name=params.table_name,
-        table_ddl=duckdb_ddl_file_downloads(params.table_name),
-    )
-
     logger.info(f"Sinking data to {params.destination}")
-    if "local" in params.destination:
-        conn.sql(f"COPY {params.table_name} TO '{params.table_name}.csv';")
+    # Determine the initial destination (local or md)
+    initial_destination = "local" if params.destination == "s3" else params.destination
+    logger.info(f"Initial data sink: {initial_destination}")
 
-    if "s3" in params.destination:
-        load_aws_credentials(conn, params.aws_profile)
-        write_to_s3_from_duckdb(
-            conn, f"{params.table_name}", params.s3_path, "timestamp"
-        )
+    buffer = ArrowTableLoadingBuffer(
+        duckdb_schema=FileDownloads.duckdb_schema(params.table_name),
+        pyarrow_schema=FileDownloads.pyarrow_schema(),
+        database_name=DATABASE_NAME,
+        table_name=params.table_name,
+        dryrun=False,
+        destination=initial_destination,
+    )
+    logger.info(f"Deleting existing data from {params.start_date} to {params.end_date}")
+    delete_query = f"""
+    DELETE FROM {DATABASE_NAME}.main.{params.table_name} 
+    WHERE {params.timestamp_column} BETWEEN '{params.start_date}' AND '{params.end_date}'
+    """
+    buffer.conn.execute(delete_query)
+    logger.info("Existing data deleted")
 
-    if "md" in params.destination:
-        connect_to_md(conn, os.environ["motherduck_token"])
-        write_to_md_from_duckdb(
-            duckdb_con=conn,
-            table=f"{params.table_name}",
-            local_database="memory",
-            remote_database="duckdb_stats",
+    buffer.insert(pa_tbl)
+    # making sure all the data is flushed
+    buffer.flush()
+    # If destination is S3, write to S3
+    if params.destination == "s3":
+        logger.info("Writing data to S3")
+        buffer.write_to_s3(
+            s3_path=params.s3_path,
             timestamp_column=params.timestamp_column,
-            start_date=params.start_date,
-            end_date=params.end_date,
+            aws_profile=params.aws_profile,
         )
     end_time = datetime.now()
     elapsed = (end_time - start_time).total_seconds()
