@@ -17,11 +17,11 @@ on:
           - both
       start_date:
         description: 'Start Date'
-        required: true
+        required: false
         default: ''
       end_date:
         description: 'End Date'
-        required: true
+        required: false
         default: ''
   schedule:
     - cron: '0 0 * * *' 
@@ -32,6 +32,8 @@ jobs:
     outputs:
       start_date: ${{ steps.dates.outputs.START_DATE }}
       end_date: ${{ steps.dates.outputs.END_DATE }}
+      run_ingest: ${{ steps.set-flags.outputs.run_ingest }}
+      run_transform: ${{ steps.set-flags.outputs.run_transform }}
     steps:
       - name: Calculate Dates
         id: dates
@@ -45,11 +47,24 @@ jobs:
             echo "START_DATE=${START_DATE}" >> $GITHUB_OUTPUT
             echo "END_DATE=${END_DATE}" >> $GITHUB_OUTPUT
           fi
+      - name: Set job flags
+        id: set-flags
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ github.event.inputs.job_type }}" == "both" ]]; then
+            echo "run_ingest=true" >> $GITHUB_OUTPUT
+            echo "run_transform=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.inputs.job_type }}" == "ingest" ]]; then
+            echo "run_ingest=true" >> $GITHUB_OUTPUT
+            echo "run_transform=false" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.inputs.job_type }}" == "transform" ]]; then
+            echo "run_ingest=false" >> $GITHUB_OUTPUT
+            echo "run_transform=true" >> $GITHUB_OUTPUT
+          fi
 
   ingest-pypi-data:
     needs: setup
     runs-on: ubuntu-latest
-    if: github.event.inputs.job_type == 'ingest' || github.event.inputs.job_type == 'both' || github.event_name == 'schedule'
+    if: needs.setup.outputs.run_ingest == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -87,7 +102,10 @@ jobs:
   transform-pypi-data:
     needs: [setup, ingest-pypi-data]
     runs-on: ubuntu-latest
-    if: github.event.inputs.job_type == 'transform' || github.event.inputs.job_type == 'both' || github.event_name == 'schedule'
+    if: |
+      always() &&
+      needs.setup.outputs.run_transform == 'true' &&
+      (needs.ingest-pypi-data.result == 'success' || needs.ingest-pypi-data.result == 'skipped')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
