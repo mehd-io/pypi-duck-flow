@@ -1,9 +1,7 @@
-""" Helper functions for interacting with DuckDB and MotherDUck """
 import duckdb
 import os
 import pyarrow as pa
 from loguru import logger
-
 
 class ArrowTableLoadingBuffer:
     def __init__(
@@ -14,18 +12,17 @@ class ArrowTableLoadingBuffer:
         table_name: str,
         dryrun: bool = False,
         destination="local",
-        flush_threshold: int = 10000,
+        chunk_size: int = 20000,
     ):
         self.duckdb_schema = duckdb_schema
         self.pyarrow_schema = pyarrow_schema
         self.dryrun = dryrun
         self.database_name = database_name
         self.table_name = table_name
-        self.accumulated_data = pa.Table.from_batches([], schema=pyarrow_schema)
         self.total_inserted = 0
         self.conn = self.initialize_connection(destination, duckdb_schema)
         self.primary_key_exists = "PRIMARY KEY" in duckdb_schema.upper()
-        self.flush_threshold = flush_threshold
+        self.chunk_size = chunk_size
 
     def initialize_connection(self, destination, sql):
         if destination == "md":
@@ -48,45 +45,26 @@ class ArrowTableLoadingBuffer:
         return conn
 
     def insert(self, table: pa.Table):
-        if self.accumulated_data is None or len(self.accumulated_data) == 0:
-            self.accumulated_data = table
+        if not self.dryrun:
+            total_rows = table.num_rows
+            for batch_start in range(0, total_rows, self.chunk_size):
+                batch_end = min(batch_start + self.chunk_size, total_rows)
+                chunk = table.slice(batch_start, batch_end - batch_start)
+                self.insert_chunk(chunk)
+                logger.info(f"Inserted chunk {batch_start} to {batch_end}")
+            self.total_inserted += total_rows
+            logger.info(f"Total inserted: {self.total_inserted} rows")
+
+    def insert_chunk(self, chunk: pa.Table):
+        self.conn.register("buffer_table", chunk)
+        if self.primary_key_exists:
+            insert_query = f"""
+            INSERT OR REPLACE INTO {self.table_name} SELECT * FROM buffer_table
+            """
         else:
-            # Ensure the schemas match before concatenating
-            target_schema = self.accumulated_data.schema
-            table = table.select(target_schema.names)
-            self.accumulated_data = pa.concat_tables([self.accumulated_data, table])
-
-        # Check if we need to flush
-        if self.accumulated_data.num_rows >= self.flush_threshold:
-            logger.info(
-                f"Flushing {self.accumulated_data.num_rows} records to the database."
-            )
-            self.flush()
-
-    def flush_if_needed(self):
-        if self.accumulated_data.num_rows >= self.flush_threshold:
-            self.flush()
-
-    def flush(self) -> None:
-        if not self.dryrun and self.accumulated_data.num_rows > 0:
-            self.conn.register("buffer_table", self.accumulated_data)
-            if self.primary_key_exists:
-                insert_query = f"""
-                INSERT OR REPLACE INTO {self.table_name} SELECT * FROM buffer_table
-                """
-            else:
-                insert_query = (
-                    f"INSERT INTO {self.table_name} SELECT * FROM buffer_table"
-                )
-            self.conn.execute(insert_query)
-            self.conn.unregister("buffer_table")
-            self.total_inserted += self.accumulated_data.num_rows
-            logger.info(
-                f"Flushed {self.accumulated_data.num_rows} records to the database."
-            )
-            self.accumulated_data = pa.Table.from_batches(
-                [], schema=self.accumulated_data.schema
-            )
+            insert_query = f"INSERT INTO {self.table_name} SELECT * FROM buffer_table"
+        self.conn.execute(insert_query)
+        self.conn.unregister("buffer_table")
 
     def load_aws_credentials(self, profile: str):
         logger.info(f"Loading AWS credentials for profile: {profile}")
