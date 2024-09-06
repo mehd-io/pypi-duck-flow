@@ -6,6 +6,11 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
+      database_name:
+        description: 'Database name'
+        required: false
+        default: 'duckdb_stats'
+        type: string
       job_type:
         description: 'Job to run'
         required: true
@@ -87,7 +92,7 @@ jobs:
           START_DATE: ${{ needs.setup.outputs.start_date }}
           END_DATE: ${{ needs.setup.outputs.end_date }}
           PYPI_PROJECT: duckdb
-          TABLE_NAME: pypi_file_downloads
+          DATABASE_NAME: ${{ github.event.inputs.database_name }}
           GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }} 
           TIMESTAMP_COLUMN: timestamp
           DESTINATION: md
@@ -127,6 +132,7 @@ jobs:
         env:
           START_DATE: ${{ needs.setup.outputs.start_date }}
           END_DATE: ${{ needs.setup.outputs.end_date }}
+          DATABASE_NAME: ${{ github.event.inputs.database_name }}
           DBT_TARGET: prod
           DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
           motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
