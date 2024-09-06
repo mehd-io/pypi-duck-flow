@@ -3,7 +3,9 @@ pypi_metrics:
     dev:
       type: duckdb
       path: /tmp/dbt.duckdb
+      threads: 1
     prod:
       type: duckdb
       path: "md:duckdb_stats"
+      threads: 1
   target: dev
