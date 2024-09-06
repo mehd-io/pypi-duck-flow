@@ -6,6 +6,6 @@ pypi_metrics:
       threads: 1
     prod:
       type: duckdb
-      path: "md:{{ env_var('DATABASE_NAME', 'duckdb_stats') }}"
+      path: "md:{{ var('DATABASE_NAME', 'duckdb_stats') }}"
       threads: 1
   target: dev
