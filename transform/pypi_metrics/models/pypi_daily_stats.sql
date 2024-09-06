@@ -1,3 +1,5 @@
+{% set database_name = var('database_name', 'duckdb_stats') %}
+
 WITH pre_aggregated_data AS (
     SELECT
         timestamp :: date as download_date,
@@ -16,11 +18,10 @@ WITH pre_aggregated_data AS (
             )
         END AS python_version
     FROM
-        {% if var('data_source') == 'external_source' %}
-        {{ dbt_unit_testing.source('external_source', 'pypi_file_downloads') }}
-        {% else %}
-        {{ dbt_unit_testing.source('duckdb_stats', 'pypi_file_downloads') }}
-        {% endif %}
+        {{ dbt_unit_testing.source(
+            'external_source' if var('data_source') == 'external_source' else database_name,
+            'pypi_file_downloads'
+        )}}
     WHERE
         download_date >= '{{ var("start_date") }}'
         AND download_date < '{{ var("end_date") }}'
