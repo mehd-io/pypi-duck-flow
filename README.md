@@ -29,6 +29,7 @@ Finally a `Makefile` is available to run common tasks.
 
 A `.env` file is required to run the project. You can copy the `.env.example` file and fill the required values.
 ```
+DATABASE_NAME=duckdb_stats # duckdb database name
 TABLE_NAME=pypi_file_downloads # output table name
 S3_PATH=s3://my-s3-bucket # output s3 path
 AWS_PROFILE=default # aws profile to use

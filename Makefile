@@ -5,6 +5,7 @@ REPOSITORY=mehd-io/pypi-duck-flow
 DBT_FOLDER = transform/pypi_metrics/
 DBT_TARGET = dev
 DBT_DATA_SOURCE = motherduck
+DATABASE_NAME ?= duckdb_stats
 DOCKER ?= false
 DOCKER_CMD = 
 DOCKER_IMAGE ?= ghcr.io/$(REPOSITORY)
@@ -25,7 +26,7 @@ pypi-ingest:
 		--start_date $$START_DATE \
 		--end_date $$END_DATE \
 		--pypi_project $$PYPI_PROJECT \
-		--table_name $$TABLE_NAME \
+		--database_name $$DATABASE_NAME \
 		--s3_path $$S3_PATH \
 		--aws_profile $$AWS_PROFILE \
 		--gcp_project $$GCP_PROJECT \
@@ -40,7 +41,7 @@ pypi-transform:
 		--target $$DBT_TARGET \
 		--project-dir $$DBT_FOLDER \
 		--profiles-dir $$DBT_FOLDER \
-		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)", "data_source": "$(DBT_DATA_SOURCE)"}'
+		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)", "data_source": "$(DBT_DATA_SOURCE)", "database_name": "$(DATABASE_NAME)"}'
 
 # Note : start_date and end_date depends on the mock data in the test
 pypi-transform-test:

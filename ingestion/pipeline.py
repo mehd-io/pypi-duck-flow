@@ -13,8 +13,6 @@ from ingestion.models import (
     PypiJobParameters,
 )
 
-DATABASE_NAME = "duckdb_stats_tmp_3"
-
 
 def main(params: PypiJobParameters):
     start_time = datetime.now()
@@ -34,14 +32,14 @@ def main(params: PypiJobParameters):
     buffer = ArrowTableLoadingBuffer(
         duckdb_schema=FileDownloads.duckdb_schema(params.table_name),
         pyarrow_schema=FileDownloads.pyarrow_schema(),
-        database_name=DATABASE_NAME,
+        database_name=params.database_name,
         table_name=params.table_name,
         dryrun=False,
         destination=initial_destination,
     )
     logger.info(f"Deleting existing data from {params.start_date} to {params.end_date}")
     delete_query = f"""
-    DELETE FROM {DATABASE_NAME}.main.{params.table_name} 
+    DELETE FROM {params.database_name}.main.{params.table_name} 
     WHERE {params.timestamp_column} BETWEEN '{params.start_date}' AND '{params.end_date}'
     """
     buffer.conn.execute(delete_query)
