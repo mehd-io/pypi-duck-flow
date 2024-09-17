@@ -40,7 +40,7 @@ def main(params: PypiJobParameters):
     logger.info(f"Deleting existing data from {params.start_date} to {params.end_date}")
     delete_query = f"""
     DELETE FROM {params.database_name}.main.{params.table_name} 
-    WHERE {params.timestamp_column} BETWEEN '{params.start_date}' AND '{params.end_date}'
+    WHERE {params.timestamp_column} >= '{params.start_date}' AND {params.timestamp_column} < '{params.end_date}'
     """
     buffer.conn.execute(delete_query)
     logger.info("Existing data deleted")
