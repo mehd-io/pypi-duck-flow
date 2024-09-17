@@ -3,6 +3,7 @@ import os
 import pyarrow as pa
 from loguru import logger
 
+
 class ArrowTableLoadingBuffer:
     def __init__(
         self,
@@ -54,6 +55,12 @@ class ArrowTableLoadingBuffer:
                 logger.info(f"Inserted chunk {batch_start} to {batch_end}")
             self.total_inserted += total_rows
             logger.info(f"Total inserted: {self.total_inserted} rows")
+            # Check if there is any leftover data to be inserted after the last chunk
+            if total_rows % self.chunk_size != 0:
+                remaining_rows = total_rows % self.chunk_size
+                final_chunk = table.slice(total_rows - remaining_rows, remaining_rows)
+                self.insert_chunk(final_chunk)
+                logger.info(f"Inserted final chunk of {remaining_rows} rows")
 
     def insert_chunk(self, chunk: pa.Table):
         self.conn.register("buffer_table", chunk)

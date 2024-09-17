@@ -2,6 +2,7 @@ import pyarrow as pa
 import pytest
 from ingestion.duck import ArrowTableLoadingBuffer
 
+
 @pytest.fixture
 def buffer_factory():
     def _create_buffer(schema, primary_key=False):
@@ -13,9 +14,11 @@ def buffer_factory():
             table_name="test_table",
             dryrun=False,
             destination="local",
-            chunk_size=2  # Small chunk size for testing
+            chunk_size=2,  # Small chunk size for testing
         )
+
     return _create_buffer
+
 
 def test_insert_and_query(buffer_factory):
     buffer = buffer_factory(schema="CREATE TABLE test_table (id INTEGER, name VARCHAR)")
@@ -38,6 +41,7 @@ def test_insert_and_query(buffer_factory):
     expected = [(1, "Alice"), (2, "Bob"), (3, "Charlie"), (4, "David")]
     assert result == expected, "Data in the table does not match expected values"
 
+
 def test_insert_chunks(buffer_factory):
     buffer = buffer_factory(schema="CREATE TABLE test_table (id INTEGER, name VARCHAR)")
     chunk1 = pa.Table.from_pydict(
@@ -52,7 +56,7 @@ def test_insert_chunks(buffer_factory):
             "name": pa.array(["Charlie", "David"]),
         }
     )
-    
+
     buffer.insert(chunk1)
     buffer.insert(chunk2)
 
@@ -66,6 +70,7 @@ def test_insert_chunks(buffer_factory):
     ).fetchall()
     expected = [(1, "Alice"), (2, "Bob"), (3, "Charlie"), (4, "David")]
     assert result == expected, "Data in the table does not match expected values"
+
 
 def test_insert_large_table(buffer_factory):
     buffer = buffer_factory(schema="CREATE TABLE test_table (id INTEGER, name VARCHAR)")
@@ -82,14 +87,25 @@ def test_insert_large_table(buffer_factory):
     assert total_rows == 100, f"Expected 100 total rows, but found {total_rows}"
 
     # Verify first and last rows
-    first_row = buffer.conn.execute("SELECT id, name FROM test_table ORDER BY id LIMIT 1").fetchone()
-    last_row = buffer.conn.execute("SELECT id, name FROM test_table ORDER BY id DESC LIMIT 1").fetchone()
-    
+    first_row = buffer.conn.execute(
+        "SELECT id, name FROM test_table ORDER BY id LIMIT 1"
+    ).fetchone()
+    last_row = buffer.conn.execute(
+        "SELECT id, name FROM test_table ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+
     assert first_row == (1, "Name_1"), f"First row does not match expected: {first_row}"
-    assert last_row == (100, "Name_100"), f"Last row does not match expected: {last_row}"
+    assert last_row == (
+        100,
+        "Name_100",
+    ), f"Last row does not match expected: {last_row}"
+
 
 def test_primary_key_handling(buffer_factory):
-    buffer = buffer_factory(schema="CREATE TABLE test_table (id INTEGER PRIMARY KEY, name VARCHAR)", primary_key=True)
+    buffer = buffer_factory(
+        schema="CREATE TABLE test_table (id INTEGER PRIMARY KEY, name VARCHAR)",
+        primary_key=True,
+    )
 
     # Insert initial data
     initial_data = pa.Table.from_pydict(

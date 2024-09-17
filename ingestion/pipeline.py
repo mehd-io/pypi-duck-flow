@@ -46,8 +46,7 @@ def main(params: PypiJobParameters):
     logger.info("Existing data deleted")
 
     buffer.insert(pa_tbl)
-    # making sure all the data is flushed
-    buffer.flush()
+
     # If destination is S3, write to S3
     if params.destination == "s3":
         logger.info("Writing data to S3")
