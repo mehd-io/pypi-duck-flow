@@ -36,7 +36,7 @@ title: DuckDB 🦆 - Python 🐍 downloads
 <LineChart data = {download_week} y=weekly_downloads x=week_start_date  />
 
 <DataTable data="{download_last_6_months}" search="false">
-    <Column id="month_start_date" title="Month Start Date"/>
+    <Column id="year_month" title="Year Month"/>
     <Column id="monthly_downloads" title="Monthly Downloads" />
 </DataTable>
 </Grid>
@@ -73,13 +73,8 @@ FROM weekly_download
 
 ```sql download_month
 SELECT 
-    DATE_TRUNC('month', week_start_date) AS month_start_date,
-    SUM(weekly_download_sum) AS monthly_downloads
-FROM weekly_download
-GROUP BY 
-    month_start_date
-ORDER BY 
-    month_start_date DESC
+    *
+FROM monthly_download
 ```
 
 ```sql download_last_6_months
@@ -102,13 +97,12 @@ ORDER BY
 ```
 
 ```sql download_last_month
-SELECT 
-    month_start_date, 
+SELECT
+    year_month,
     monthly_downloads
-FROM 
-    ${download_month}
-WHERE 
-    month_start_date = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+FROM
+    monthly_download
+LIMIT 1 OFFSET 1
 ```
 
 ```sql download_last_week
@@ -190,7 +184,7 @@ You can query the raw data directly from any DuckDB client. Here's what you need
 2) Attach the [shared database to your workspace](https://motherduck.com/docs/getting-started/sample-data-queries/pypi)
 
 ```bash
-ATTACH 'md:_share/duckdb_stats/507a3c5f-e611-4899-b858-043ce733b57c' AS duckdb_stats;
+ATTACH 'md:_share/duckdb_stats/1eb684bf-faff-4860-8e7d-92af4ff9a410' AS duckdb_stats;
 ```
 
 *Made with ❤️ by 🧢 [mehdio](https://www.linkedin.com/in/mehd-io/)*
