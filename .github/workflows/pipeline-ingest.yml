@@ -14,12 +14,13 @@ on:
       job_type:
         description: 'Job to run'
         required: true
-        default: 'both'
+        default: 'all'
         type: choice
         options:
           - ingest
           - transform
-          - both
+          - all
+          - update
       start_date:
         description: 'Start Date'
         required: false
@@ -39,6 +40,7 @@ jobs:
       end_date: ${{ steps.dates.outputs.END_DATE }}
       run_ingest: ${{ steps.set-flags.outputs.run_ingest }}
       run_transform: ${{ steps.set-flags.outputs.run_transform }}
+      run_update: ${{ steps.set-flags.outputs.run_update }}
     steps:
       - name: Calculate Dates
         id: dates
@@ -55,15 +57,22 @@ jobs:
       - name: Set job flags
         id: set-flags
         run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ github.event.inputs.job_type }}" == "both" ]]; then
+          if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ github.event.inputs.job_type }}" == "all" ]]; then
             echo "run_ingest=true" >> $GITHUB_OUTPUT
             echo "run_transform=true" >> $GITHUB_OUTPUT
+            echo "run_update=true" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event.inputs.job_type }}" == "ingest" ]]; then
             echo "run_ingest=true" >> $GITHUB_OUTPUT
             echo "run_transform=false" >> $GITHUB_OUTPUT
+            echo "run_update=false" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event.inputs.job_type }}" == "transform" ]]; then
             echo "run_ingest=false" >> $GITHUB_OUTPUT
             echo "run_transform=true" >> $GITHUB_OUTPUT
+            echo "run_update=false" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.inputs.job_type }}" == "update" ]]; then
+            echo "run_ingest=false" >> $GITHUB_OUTPUT
+            echo "run_transform=false" >> $GITHUB_OUTPUT
+            echo "run_update=true" >> $GITHUB_OUTPUT
           fi
 
   ingest-pypi-data:
@@ -139,3 +148,19 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
         run: |
           make pypi-transform DOCKER=true DBT_TARGET=${DBT_TARGET}
+
+  update-motherduck-share:
+    needs: setup
+    runs-on: ubuntu-latest
+    if: needs.setup.outputs.run_update == 'true'
+    steps:
+      - name: Setup DuckDB
+        uses: opt-nc/setup-duckdb-action@v1.0.8
+        with:
+          version: v1.1.0
+
+      - name: Update MotherDuck share
+        env:
+          motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          duckdb -c "attach 'md:';update share duckdb_stats"
