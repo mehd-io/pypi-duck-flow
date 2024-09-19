@@ -150,9 +150,9 @@ jobs:
           make pypi-transform DOCKER=true DBT_TARGET=${DBT_TARGET}
 
   update-motherduck-share:
-    needs: setup
+    needs: transform-pypi-data
     runs-on: ubuntu-latest
-    if: needs.setup.outputs.run_update == 'true'
+    if: needs.transform-pypi-data.result == 'success' || needs.transform-pypi-data.result == 'skipped'
     steps:
       - name: Setup DuckDB
         uses: opt-nc/setup-duckdb-action@v1.0.8
@@ -163,4 +163,4 @@ jobs:
         env:
           motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          duckdb -c "attach 'md:';update share duckdb_stats"
+          duckdb -c "attach 'md:';"
