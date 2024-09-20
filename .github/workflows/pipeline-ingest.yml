@@ -162,5 +162,7 @@ jobs:
       - name: Update MotherDuck share
         env:
           motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
+          DATABASE_NAME: ${{ github.event.inputs.database_name || 'duckdb_stats' }} 
         run: |
-          duckdb -c "attach 'md:';"
+          echo "ATTACH 'md:';" >> ~/.duckdbrc && duckdb -c "UPDATE SHARE $DATABASE_NAME;"
+
