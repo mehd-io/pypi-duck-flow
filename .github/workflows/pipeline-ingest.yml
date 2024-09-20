@@ -54,6 +54,7 @@ jobs:
             echo "START_DATE=${START_DATE}" >> $GITHUB_OUTPUT
             echo "END_DATE=${END_DATE}" >> $GITHUB_OUTPUT
           fi
+
       - name: Set job flags
         id: set-flags
         run: |
@@ -74,6 +75,9 @@ jobs:
             echo "run_transform=false" >> $GITHUB_OUTPUT
             echo "run_update=true" >> $GITHUB_OUTPUT
           fi
+          echo "Debug: run_ingest=${{ steps.set-flags.outputs.run_ingest }}"
+          echo "Debug: run_transform=${{ steps.set-flags.outputs.run_transform }}"
+          echo "Debug: run_update=${{ steps.set-flags.outputs.run_update }}"
 
   ingest-pypi-data:
     needs: setup
@@ -164,5 +168,5 @@ jobs:
           motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
           DATABASE_NAME: ${{ github.event.inputs.database_name || 'duckdb_stats' }} 
         run: |
-          echo "ATTACH 'md:';" >> ~/.duckdbrc && duckdb -c "UPDATE SHARE $DATABASE_NAME;"
+          echo "ATTACH 'md:';" >> ~/.duckdbrc && duckdb -c "UPDATE SHARE ;"
 
