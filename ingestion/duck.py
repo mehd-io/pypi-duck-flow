@@ -13,7 +13,7 @@ class ArrowTableLoadingBuffer:
         table_name: str,
         dryrun: bool = False,
         destination="local",
-        chunk_size: int = 20000,
+        chunk_size: int = 50000,
     ):
         self.duckdb_schema = duckdb_schema
         self.pyarrow_schema = pyarrow_schema
