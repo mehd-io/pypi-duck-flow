@@ -66,6 +66,28 @@ title: DuckDB 🦆 - Python 🐍 downloads
     swapXY=true
 />
 
+## Adoption of New Versions over Time
+
+<Alert>
+Note: this only includes MotherDuck Compatible Versions (>0.10.2)
+</Alert>
+
+<Grid cols=2>
+    <AreaChart 
+    data={downloads_by_version_md}
+    x=download_date
+    y=downloads
+    series=version
+    />
+    <AreaChart 
+    data={downloads_by_version_md}
+    x=download_date
+    y=downloads
+    series=version
+    type=stacked100
+    />
+</Grid>
+
 ```sql count_over_month
 SELECT  SUM(weekly_download_sum) as weekly_download_sum
 FROM weekly_download
@@ -173,6 +195,12 @@ limit 10
 
 ```sql last_refresh_date
 select max_date from motherduck.refresh_date
+```
+
+```sql downloads_by_version_md
+select * from downloads_by_version
+where is_dev_release = 0
+and (version in ('0.10.2','0.10.3') or version like '1.%')
 ```
 
 ## Build Your Own Insights on Any Python Package
