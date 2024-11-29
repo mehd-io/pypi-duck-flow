@@ -22,7 +22,7 @@ endif
 .PHONY : help pypi-ingest format test aws-sso-creds pypi-transform 
 
 pypi-ingest: 
-	$(DOCKER_CMD) poetry run python3 -m ingestion.pipeline \
+	$(DOCKER_CMD) uv run python3 -m ingestion.pipeline \
 		--start_date $$START_DATE \
 		--end_date $$END_DATE \
 		--pypi_project $$PYPI_PROJECT \
@@ -34,10 +34,10 @@ pypi-ingest:
 		--destination $$DESTINATION
 
 pypi-ingest-test:
-	pytest ingestion/tests
+	uv run pytest ingestion/tests
 
 pypi-transform:
-	$(DOCKER_CMD) dbt run \
+	$(DOCKER_CMD) uv run dbt run \
 		--target $$DBT_TARGET \
 		--project-dir $$DBT_FOLDER \
 		--profiles-dir $$DBT_FOLDER \
@@ -45,7 +45,7 @@ pypi-transform:
 
 # Note : start_date and end_date depends on the mock data in the test
 pypi-transform-test:
-	$(DOCKER_CMD) dbt test \
+	$(DOCKER_CMD) uv run dbt test \
 		--target dev \
 		--project-dir $$DBT_FOLDER \
 		--profiles-dir $$DBT_FOLDER \
@@ -57,13 +57,13 @@ build:
 
 ## Development
 install: 
-	poetry install
+	uv sync --dev
 
 format:
-	ruff format . 
+	uv run ruff format . 
 
 dbt-deps:
-	$(DOCKER_CMD) dbt deps \
+	$(DOCKER_CMD) uv run dbt deps \
 		--project-dir $$DBT_FOLDER \
 		--profiles-dir $$DBT_FOLDER 
 
