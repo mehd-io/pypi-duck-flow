@@ -1,7 +1,7 @@
 # Changelog
 
 ## 2024-11-29
-- **Changed** Change to `uv` for packaging and upgrade duckdb to `1.1.3`
+- **Changed** Change to `uv` for packaging and upgrade Python `3.12` and duckdb to `1.1.3`.
 
 ## 2024-10-21
 - **Added**: New charts on Evidence dashboard and source file [`downloads_by_version.sql`](https://github.com/mehd-io/pypi-duck-flow/blob/main/dashboard/sources/motherduck/downloads_by_version.sql).
