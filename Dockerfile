@@ -1,29 +1,42 @@
 # Stage 1: Base
-FROM python:3.11 as base
+FROM python:3.12 as base
 
-# Install Poetry
-RUN pip install poetry --no-cache-dir
+# Install UV via pip
+RUN pip install uv==0.5.5 --no-cache-dir
+
+# UV environment settings
+ENV UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PYTHON=/usr/local/bin/python3.12
 
 # Stage : Development
 FROM base as development
 # Set working directory
 WORKDIR /app
-# Copy Poetry configuration files
-COPY pyproject.toml poetry.lock ./
+
+# Copy UV configuration files
+COPY pyproject.toml uv.lock ./
+
 # Install development dependencies
-RUN poetry config virtualenvs.create false && poetry install
+RUN --mount=type=cache,target=/root/.cache \
+    uv sync --locked
 
 # Stage : Production
 FROM base as production
 # Set working directory
 WORKDIR /app
-# Copy Poetry configuration files
-COPY Makefile pyproject.toml poetry.lock ./
-# Copy the codebase
+
+# Copy UV configuration files and codebase
+COPY Makefile pyproject.toml uv.lock ./
 COPY ./ingestion ./ingestion
 COPY ./transform ./transform
+
 # Install only runtime dependencies
-RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
+RUN --mount=type=cache,target=/root/.cache \
+    uv sync --locked --no-dev --no-install-project
+
+# Run additional setup (e.g., dbt dependencies)
 RUN make dbt-deps
 
 # Default command to keep container running for interactive `make` commands
