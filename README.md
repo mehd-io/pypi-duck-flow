@@ -52,8 +52,8 @@ TRANSFORM_S3_PATH_OUTPUT=s3://my-output-bucket/ # For transform pipeline, output
 ### Requirements
 
 - [GCP account](https://console.cloud.google.com/)
-- AWS S3 bucket (optional to push data to S3) and AWS credentials (at the default `~/.aws/credentials` path) that has write access to the bucket
-- [MotherDuck account](https://app.motherduck.com/) (optional to push data to MotherDuck)
+- OPTIONAL: AWS S3 bucket (optional to push data to S3) and AWS credentials (at the default `~/.aws/credentials` path) that has write access to the bucket
+- OPTIONAL: [MotherDuck account](https://app.motherduck.com/) (optional to push data to MotherDuck)
 
 ### Run
 Once you fill your `.env` file, do the following :
