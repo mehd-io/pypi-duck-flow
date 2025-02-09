@@ -1,5 +1,8 @@
 # Changelog
 
+## 2025-02-09
+- Bumping DuckDB to `1.2.0`.
+
 ## 2024-11-29
 - **Changed** Change to `uv` for packaging and upgrade Python `3.12` and duckdb to `1.1.3`.
 
