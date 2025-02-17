@@ -155,9 +155,9 @@ jobs:
     if: needs.transform-pypi-data.result == 'success' || needs.transform-pypi-data.result == 'skipped'
     steps:
       - name: Setup DuckDB
-        uses: opt-nc/setup-duckdb-action@v1.0.8
+        uses: opt-nc/setup-duckdb-action@v1.0.10
         with:
-          version: v1.1.0
+          version: v1.2.0
 
       - name: Update MotherDuck share
         env:
