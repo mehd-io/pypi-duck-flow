@@ -21,7 +21,7 @@ Please refer to the [`CHANGELOG.md`](./CHANGELOG.md) for the latest updates.
 
 The project requires :
 * Python 3.11
-* Poetry for dependency management.
+* uv for python packages.
 * Nodejs (only for the visualization part)
 
 There's also two [devcontainers](https://code.visualstudio.com/docs/devcontainers/containers) definitions for VSCode : one for Python, and one for NodeJS.
