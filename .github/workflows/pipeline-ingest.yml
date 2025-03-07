@@ -49,7 +49,7 @@ jobs:
             echo "START_DATE=${{ github.event.inputs.start_date }}" >> $GITHUB_OUTPUT
             echo "END_DATE=${{ github.event.inputs.end_date }}" >> $GITHUB_OUTPUT
           else
-            START_DATE=$(date -d '2 days ago' +%Y-%m-%d)
+            START_DATE=$(date -d '7 days ago' +%Y-%m-%d)
             END_DATE=$(date -d '1 day ago' +%Y-%m-%d)
             echo "START_DATE=${START_DATE}" >> $GITHUB_OUTPUT
             echo "END_DATE=${END_DATE}" >> $GITHUB_OUTPUT
