@@ -17,7 +17,7 @@
   "dependencies": {
     "@evidence-dev/core-components": "^4.4.0",
     "@evidence-dev/evidence": "^37.0.0",
-    "@evidence-dev/motherduck": "^1.0.0"
+    "@evidence-dev/motherduck": "^1.0.4"
   },
   "overrides": {
     "jsonwebtoken": "9.0.0",
