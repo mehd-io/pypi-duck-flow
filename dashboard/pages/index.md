@@ -69,7 +69,7 @@ title: DuckDB 🦆 - Python 🐍 downloads
 ## Adoption of New Versions over Time
 
 <Alert>
-Note: this only includes MotherDuck Compatible Versions (>0.10.2)
+Note: this only includes MotherDuck Compatible Versions (>1.1.0)
 </Alert>
 
 <Grid cols=2>
@@ -200,7 +200,7 @@ select max_date from motherduck.refresh_date
 ```sql downloads_by_version_md
 select * from downloads_by_version
 where is_dev_release = 0
-and (version in ('0.10.2','0.10.3') or version like '1.%')
+and (version like '1.1%' or version like '1.2%' or version like '1.3%')
 ```
 
 ## Build Your Own Insights on Any Python Package
