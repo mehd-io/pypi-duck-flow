@@ -17,11 +17,16 @@
   "dependencies": {
     "@evidence-dev/core-components": "^5.2.2",
     "@evidence-dev/evidence": "^40.1.2",
-    "@evidence-dev/motherduck": "^1.0.4"
+    "@evidence-dev/motherduck": "^1.0.4",
+    "@tailwindcss/node": "^4.0.6",
+    "@tailwindcss/vite": "^4.0.6"
   },
   "overrides": {
     "jsonwebtoken": "9.0.0",
     "trim@<0.0.3": ">0.0.3",
     "sqlite3": "5.1.5"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.0.6"
   }
 }
