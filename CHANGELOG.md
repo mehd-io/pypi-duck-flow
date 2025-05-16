@@ -1,5 +1,10 @@
 # Changelog
 
+## 2025-05-16
+- Rework `/ingestion` to use the DuckDB BigQuery extension instead of BigQuery Python API.
+- Bump DuckDB to `1.2.2`
+- Bump dbt-duckdb to `1.9.3`
+
 ## 2025-02-09
 - Bumping DuckDB to `1.2.0`.
 

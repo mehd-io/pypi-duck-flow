@@ -1,5 +1,7 @@
+ARG PLATFORM=amd64
+
 # Stage 1: Base
-FROM python:3.12 as base
+FROM --platform=linux/${PLATFORM} python:3.12 as base
 
 # Install UV via pip
 RUN pip install uv==0.5.5 --no-cache-dir

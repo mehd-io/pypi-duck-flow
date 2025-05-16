@@ -1,137 +1,125 @@
-import pyarrow as pa
 import pytest
-from ingestion.duck import ArrowTableLoadingBuffer
+import duckdb
+from unittest.mock import patch, MagicMock, ANY, call
+from ingestion.duck import MotherDuckBigQueryLoader
 
 
 @pytest.fixture
-def buffer_factory():
-    def _create_buffer(schema, primary_key=False):
-        pk_clause = "PRIMARY KEY" if primary_key else ""
-        return ArrowTableLoadingBuffer(
-            duckdb_schema=f"CREATE TABLE test_table (id INTEGER {pk_clause}, name VARCHAR)",
-            pyarrow_schema=pa.schema([("id", pa.int64()), ("name", pa.string())]),
-            database_name=":memory:",
-            table_name="test_table",
-            dryrun=False,
-            destination="local",
-            chunk_size=2,  # Small chunk size for testing
+def mock_duckdb():
+    with patch('duckdb.connect') as mock_connect:
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        yield mock_conn
+
+
+@pytest.fixture
+def loader(mock_duckdb):
+    with patch.dict('os.environ', {'motherduck_token': 'test_token', 'HOME': '/tmp'}):
+        loader = MotherDuckBigQueryLoader(
+            motherduck_database="test_db",
+            motherduck_table="test_table",
+            project_id="test_project"
         )
+        loader.conn = mock_duckdb
+        return loader
 
-    return _create_buffer
+
+def test_loader_initialization(loader, mock_duckdb):
+    assert loader.motherduck_database == "test_db"
+    assert loader.motherduck_table == "test_table"
+    assert loader.project_id == "test_project"
+    
+    # Verify that the necessary DuckDB commands were executed
+    mock_duckdb.execute.assert_any_call("INSTALL bigquery FROM community;")
+    mock_duckdb.execute.assert_any_call("LOAD bigquery;")
+    mock_duckdb.execute.assert_any_call("SET bq_experimental_filter_pushdown = true")
+    mock_duckdb.execute.assert_any_call("SET bq_query_timeout_ms = 300000")
+    mock_duckdb.execute.assert_any_call("ATTACH 'project=test_project' AS bq (TYPE bigquery, READ_ONLY)")
+    mock_duckdb.execute.assert_any_call("ATTACH 'md:'")
+    mock_duckdb.execute.assert_any_call("CREATE DATABASE IF NOT EXISTS test_db")
 
 
-def test_insert_and_query(buffer_factory):
-    buffer = buffer_factory(schema="CREATE TABLE test_table (id INTEGER, name VARCHAR)")
-    data = pa.Table.from_pydict(
-        {
-            "id": pa.array([1, 2, 3, 4], type=pa.int64()),
-            "name": pa.array(["Alice", "Bob", "Charlie", "David"]),
-        }
+def test_loader_initialization_without_token():
+    with patch.dict('os.environ', {'HOME': '/tmp'}, clear=True):
+        with pytest.raises(ValueError, match="MotherDuck token is required"):
+            MotherDuckBigQueryLoader(
+                motherduck_database="test_db",
+                motherduck_table="test_table",
+                project_id="test_project"
+            )
+
+
+def test_load_from_bigquery_to_motherduck(loader, mock_duckdb):
+    # Mock the row count estimation
+    mock_duckdb.execute.return_value.fetchone.return_value = (1000,)
+    
+    # Test the load_from_bigquery_to_motherduck method
+    query = "SELECT * FROM test_table"
+    result = loader.load_from_bigquery_to_motherduck(
+        query=query,
+        timestamp_column="timestamp",
+        start_date="2023-01-01",
+        end_date="2023-01-31",
+        chunk_size=100
     )
-    buffer.insert(data)
-
-    # Check total number of rows
-    total_rows = buffer.conn.execute("SELECT COUNT(*) FROM test_table").fetchone()[0]
-    assert total_rows == 4, f"Expected 4 total rows, but found {total_rows}"
-
-    # Verify that all data was inserted correctly
-    result = buffer.conn.execute(
-        "SELECT id, name FROM test_table ORDER BY id"
-    ).fetchall()
-    expected = [(1, "Alice"), (2, "Bob"), (3, "Charlie"), (4, "David")]
-    assert result == expected, "Data in the table does not match expected values"
+    
+    assert result == 1000
+    # Verify that the necessary DuckDB commands were executed
+    mock_duckdb.execute.assert_any_call(ANY)  # The exact query might vary, so we use ANY
 
 
-def test_insert_chunks(buffer_factory):
-    buffer = buffer_factory(schema="CREATE TABLE test_table (id INTEGER, name VARCHAR)")
-    chunk1 = pa.Table.from_pydict(
-        {
-            "id": pa.array([1, 2], type=pa.int64()),
-            "name": pa.array(["Alice", "Bob"]),
-        }
+def test_delete_existing_data(loader, mock_duckdb):
+    # Mock table existence check
+    mock_duckdb.execute.return_value.fetchone.return_value = (True,)
+    
+    # Test the _delete_existing_data method
+    loader._delete_existing_data(
+        timestamp_column="timestamp",
+        start_date="2023-01-01",
+        end_date="2023-01-31"
     )
-    chunk2 = pa.Table.from_pydict(
-        {
-            "id": pa.array([3, 4], type=pa.int64()),
-            "name": pa.array(["Charlie", "David"]),
-        }
-    )
-
-    buffer.insert(chunk1)
-    buffer.insert(chunk2)
-
-    # Check total number of rows
-    total_rows = buffer.conn.execute("SELECT COUNT(*) FROM test_table").fetchone()[0]
-    assert total_rows == 4, f"Expected 4 total rows, but found {total_rows}"
-
-    # Verify that all data was inserted correctly
-    result = buffer.conn.execute(
-        "SELECT id, name FROM test_table ORDER BY id"
-    ).fetchall()
-    expected = [(1, "Alice"), (2, "Bob"), (3, "Charlie"), (4, "David")]
-    assert result == expected, "Data in the table does not match expected values"
+    
+    # Verify the delete query was executed with the correct pattern
+    delete_calls = [call[0][0] for call in mock_duckdb.execute.call_args_list]
+    assert any("DELETE FROM test_db.main.test_table" in call for call in delete_calls)
+    assert any("timestamp >= '2023-01-01'" in call for call in delete_calls)
+    assert any("timestamp < '2023-01-31'" in call for call in delete_calls)
 
 
-def test_insert_large_table(buffer_factory):
-    buffer = buffer_factory(schema="CREATE TABLE test_table (id INTEGER, name VARCHAR)")
-    large_data = pa.Table.from_pydict(
-        {
-            "id": pa.array(range(1, 101), type=pa.int64()),
-            "name": pa.array([f"Name_{i}" for i in range(1, 101)]),
-        }
-    )
-    buffer.insert(large_data)
-
-    # Check total number of rows
-    total_rows = buffer.conn.execute("SELECT COUNT(*) FROM test_table").fetchone()[0]
-    assert total_rows == 100, f"Expected 100 total rows, but found {total_rows}"
-
-    # Verify first and last rows
-    first_row = buffer.conn.execute(
-        "SELECT id, name FROM test_table ORDER BY id LIMIT 1"
-    ).fetchone()
-    last_row = buffer.conn.execute(
-        "SELECT id, name FROM test_table ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-
-    assert first_row == (1, "Name_1"), f"First row does not match expected: {first_row}"
-    assert last_row == (
-        100,
-        "Name_100",
-    ), f"Last row does not match expected: {last_row}"
-
-
-def test_primary_key_handling(buffer_factory):
-    buffer = buffer_factory(
-        schema="CREATE TABLE test_table (id INTEGER PRIMARY KEY, name VARCHAR)",
-        primary_key=True,
-    )
-
-    # Insert initial data
-    initial_data = pa.Table.from_pydict(
-        {
-            "id": pa.array([1, 2], type=pa.int64()),
-            "name": pa.array(["Alice", "Bob"]),
-        }
-    )
-    buffer.insert(initial_data)
-
-    # Insert data with a duplicate key
-    duplicate_data = pa.Table.from_pydict(
-        {
-            "id": pa.array([2, 3], type=pa.int64()),
-            "name": pa.array(["Updated Bob", "Charlie"]),
-        }
-    )
-    buffer.insert(duplicate_data)
-
-    # Check total number of rows (should be 3, not 4)
-    total_rows = buffer.conn.execute("SELECT COUNT(*) FROM test_table").fetchone()[0]
-    assert total_rows == 3, f"Expected 3 total rows, but found {total_rows}"
-
-    # Verify that the duplicate key was updated
-    result = buffer.conn.execute(
-        "SELECT id, name FROM test_table ORDER BY id"
-    ).fetchall()
-    expected = [(1, "Alice"), (2, "Updated Bob"), (3, "Charlie")]
-    assert result == expected, "Data in the table does not match expected values"
+def test_copy_to_motherduck(loader, mock_duckdb):
+    # Mock the row count
+    mock_duckdb.execute.return_value.fetchone.return_value = (1000,)
+    
+    # Test the _copy_to_motherduck method
+    result = loader._copy_to_motherduck(chunk_size=100)
+    
+    assert result == 1000
+    
+    # Get all SQL calls made to execute
+    sql_calls = [str(call[0][0]) for call in mock_duckdb.execute.call_args_list]
+    
+    # Print all SQL calls for debugging
+    print("\nActual SQL calls:")
+    for i, call in enumerate(sql_calls):
+        print(f"{i}: {call}")
+    
+    # Verify the table creation
+    assert any("USE test_db" in call for call in sql_calls)
+    
+    # More flexible table creation check
+    create_table_calls = [call for call in sql_calls if "CREATE TABLE" in call]
+    assert len(create_table_calls) > 0, "No CREATE TABLE statement found"
+    assert any("test_db.main.test_table" in call for call in create_table_calls)
+    assert any("memory.temp_table" in call for call in create_table_calls)
+    
+    # Verify the data copying
+    insert_calls = [call for call in sql_calls if "INSERT INTO" in call]
+    assert len(insert_calls) > 0, "No INSERT statements found"
+    assert any("test_db.main.test_table" in call for call in insert_calls)
+    assert any("memory.temp_table" in call for call in insert_calls)
+    assert any("rowid BETWEEN" in call for call in insert_calls)
+    
+    # Verify chunking behavior
+    chunk_calls = [call for call in sql_calls if "rowid BETWEEN" in call]
+    assert len(chunk_calls) > 0, "No chunking calls found"
+    assert len(chunk_calls) == 10, f"Expected 10 chunks, got {len(chunk_calls)}"
