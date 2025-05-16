@@ -10,7 +10,10 @@ The project is a monorepo composed of series in 3 parts :
 - transformation, under `transform` folder ([YouTube video](https://www.youtube.com/watch?v=SpfEQQXBGMQ), [Blog](https://motherduck.com/blog/duckdb-dbt-e2e-data-engineering-project-part-2/))
 - Visualization, under `dashboard` folder ([YouTube video](https://youtu.be/ta_Pzc2EEEo), [Blog](https://motherduck.com/blog/duckdb-dashboard-e2e-data-engineering-project-part-3/))
 
-Please refer to the [`CHANGELOG.md`](./CHANGELOG.md) for the latest updates.
+> ⚠️ This project has undergone significant changes since the tutorials were recorded.  
+> To follow along with the original tutorial content, please check out the [`feat/tutorial-archive` branch](https://github.com/mehd-io/pypi-duck-flow/tree/feat/tutorial-archive).
+
+You can also refer to the [`CHANGELOG.md`](./CHANGELOG.md) for a complete list of updates.
 
 ## High level architecture
 ![High level architecture](./docs/etl_architecture.png)
