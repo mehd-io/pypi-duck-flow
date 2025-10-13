@@ -13,7 +13,7 @@ dependencies = [
     "google-auth>=2.24.0,<3.0.0",
     "pydantic>=2.7.4,<3.0.0",
     "db-dtypes>=1.1.1,<2.0.0",
-    "pyarrow==21.0.0",
+    "pyarrow==17.0.0",
     "google-cloud-bigquery-storage==2.26.0",
     "dbt-duckdb==1.9.6",
 ]
