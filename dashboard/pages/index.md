@@ -200,7 +200,7 @@ select max_date from motherduck.refresh_date
 ```sql downloads_by_version_md
 select * from downloads_by_version
 where is_dev_release = 0
-and (version like '1.1%' or version like '1.2%' or version like '1.3%')
+and (version like '1.2%' or version like '1.3%' or version like '1.4%')
 ```
 
 ## Build Your Own Insights on Any Python Package
