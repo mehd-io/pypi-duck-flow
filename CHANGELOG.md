@@ -7,6 +7,9 @@
 - Remove `db-dtypes`, `google-cloud-bigquery`, `google-auth`, `pyarrow` dependencies.
 - Clean up obsolete `s3_path` / `aws_profile` parameters from Makefile and GitHub Actions.
 
+## 2025-10-10
+- Bumping DuckDB==1.4.1, pyarrow==21.0.0, dbt-duckdb==1.9.6
+
 ## 2025-02-09
 - Bumping DuckDB to `1.2.0`.
 
