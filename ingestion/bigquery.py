@@ -1,29 +1,25 @@
 from ingestion.models import PypiJobParameters
 
-PYPI_PUBLIC_DATASET = "bigquery-public-data.pypi.file_downloads"
+PYPI_PUBLIC_TABLE = "bigquery-public-data.pypi.file_downloads"
+
+COLUMNS = [
+    "timestamp",
+    "country_code",
+    "url",
+    "project",
+    "file",
+    "details",
+    "tls_protocol",
+    "tls_cipher",
+]
 
 
-def build_pypi_query(
-    params: PypiJobParameters, pypi_public_dataset: str = PYPI_PUBLIC_DATASET
-) -> str:
-    """Build an optimized BigQuery query for PyPI file downloads
-    # /!\ This is a large dataset, filter accordingly /!\
+def build_bigquery_filter(params: PypiJobParameters) -> str:
+    """Build a BigQuery Storage Read API row restriction filter for PyPI file downloads.
+    This filter is passed directly to bigquery_scan's filter parameter.
     """
-
-    return f"""
-    SELECT 
-        timestamp,
-        country_code,
-        url,
-        project,
-        file,
-        details,
-        tls_protocol,
-        tls_cipher
-    FROM
-        `{pypi_public_dataset}`
-    WHERE
-        project = ''{params.pypi_project}''
-        AND {params.timestamp_column} >= TIMESTAMP("{params.start_date}")
-        AND {params.timestamp_column} < TIMESTAMP("{params.end_date}")
-    """
+    return (
+        f'project = "{params.pypi_project}" '
+        f'AND {params.timestamp_column} >= TIMESTAMP("{params.start_date}") '
+        f'AND {params.timestamp_column} < TIMESTAMP("{params.end_date}")'
+    )

@@ -3,14 +3,20 @@ import os
 from loguru import logger
 
 
+class DataQualityError(Exception):
+    """Raised when data quality checks fail after loading from BigQuery."""
+
+    pass
+
+
 class MotherDuckBigQueryLoader:
     """
     A specialized loader for transferring data from BigQuery to MotherDuck.
 
-    This class abstracts the implementation details of:
-    1. Loading data from BigQuery to local DuckDB
-    2. Deleting existing data from MotherDuck for the given date range
-    3. Loading data in chunks to MotherDuck for optimal performance
+    Uses DuckDB's BigQuery extension with bigquery_scan for optimal performance:
+    - Filter pushdown via the Storage Read API (no intermediate temp table in BQ)
+    - Parallel read streams (auto-matches DuckDB threads)
+    - Arrow-based optimized scan
     """
 
     def __init__(
@@ -19,35 +25,18 @@ class MotherDuckBigQueryLoader:
         motherduck_table: str,
         project_id: str,
     ):
-        """
-        Initialize the MotherDuck BigQuery loader.
-
-        Args:
-            motherduck_database: Target MotherDuck database
-            motherduck_table: Target MotherDuck table
-            project_id: GCP project ID for BigQuery
-        """
         self.motherduck_database = motherduck_database
         self.motherduck_table = motherduck_table
         self.project_id = project_id
 
-        # Initialize a single DuckDB connection
         self.conn = duckdb.connect(database=":memory:")
 
-        # Load BigQuery extension
         self.conn.execute("INSTALL bigquery FROM community;")
         self.conn.execute("LOAD bigquery;")
 
-        # Configure BigQuery extension
         self.conn.execute("SET bq_experimental_filter_pushdown = true")
-        self.conn.execute(f"SET bq_query_timeout_ms = 300000")  # 5 minutes timeout
+        self.conn.execute("SET preserve_insertion_order = FALSE")
 
-        # Attach BigQuery project
-        self.conn.execute(
-            f"ATTACH 'project={self.project_id}' AS bq (TYPE bigquery, READ_ONLY)"
-        )
-
-        # Attach MotherDuck
         if not os.environ.get("motherduck_token"):
             raise ValueError(
                 "MotherDuck token is required. Set the environment variable 'MOTHERDUCK_TOKEN'."
@@ -58,33 +47,31 @@ class MotherDuckBigQueryLoader:
 
     def load_from_bigquery_to_motherduck(
         self,
-        query: str,
+        table: str,
+        filter_str: str,
+        columns: list[str],
         timestamp_column: str,
         start_date: str,
         end_date: str,
-        chunk_size: int = 100000,  # Optimal MotherDuck chunk size
+        chunk_size: int = 100000,
     ) -> int:
         """
-        Load data from BigQuery to MotherDuck.
-        Use a temporary table in DuckDB to load the data in chunks.
+        Load data from BigQuery to MotherDuck via a local temp table.
 
         Returns:
             Total number of rows loaded to MotherDuck
         """
-        logger.info(f"Starting BigQuery to MotherDuck transfer job")
+        logger.info("Starting BigQuery to MotherDuck transfer job")
 
-        #  Estimate row count (for progress reporting)
-        estimated_rows = self._estimate_row_count(query)
-        if estimated_rows > 0:
-            logger.info(f"Found approximately {estimated_rows:,} rows to process")
-
-        # STEP 2: Create a DuckDB table with BigQuery data
-        logger.info("Loading data from BigQuery to temporary table")
-        loaded_rows = self._load_from_bigquery(query)
+        loaded_rows = self._load_from_bigquery(table, filter_str, columns)
 
         if loaded_rows == 0:
             logger.warning("No data was loaded from BigQuery")
             return 0
+
+        logger.info(f"Loaded {loaded_rows:,} rows from BigQuery")
+
+        self._validate_data(timestamp_column, start_date, end_date)
 
         logger.info(f"Deleting existing data for date range {start_date} to {end_date}")
         self._delete_existing_data(timestamp_column, start_date, end_date)
@@ -92,35 +79,26 @@ class MotherDuckBigQueryLoader:
         logger.info("Copying data to MotherDuck")
         copied_rows = self._copy_to_motherduck(chunk_size)
 
-        if estimated_rows > 0:
-            logger.info(
-                f"Transferred {copied_rows:,} rows ({(copied_rows/estimated_rows)*100:.1f}% of estimated)"
-            )
-
+        logger.info(f"Transferred {copied_rows:,} rows to MotherDuck")
         return copied_rows
 
-    def _estimate_row_count(self, query: str) -> int:
-        """Estimate the row count for the BigQuery query"""
+    def _load_from_bigquery(
+        self, table: str, filter_str: str, columns: list[str]
+    ) -> int:
+        """Load data from BigQuery into a local temp table using bigquery_scan."""
         try:
-            count_query = f"SELECT COUNT(*) FROM bq.({query})"
-            result = self.conn.execute(count_query).fetchone()
-            return result[0] if result else 0
-        except Exception as e:
-            logger.warning(f"Failed to estimate row count: {e}")
-            return 0
-
-    def _load_from_bigquery(self, query: str) -> int:
-        """Load data from BigQuery to local temporary table"""
-        try:
-            # Create a temporary table with the result of the BigQuery query
-
-            query_tmp = f"""
+            columns_sql = ", ".join(columns)
+            escaped_filter = filter_str.replace("'", "''")
+            query = f"""
                 CREATE OR REPLACE TABLE memory.temp_table AS
-                SELECT * FROM bigquery_query('{self.project_id}', '{query}')
+                SELECT {columns_sql}
+                FROM bigquery_scan('{table}',
+                    billing_project='{self.project_id}',
+                    filter='{escaped_filter}')
             """
-            logger.info(query_tmp)
-            self.conn.execute(query_tmp)
-            # Check row count
+            logger.info(f"Running bigquery_scan on {table}")
+            self.conn.execute(query)
+
             result = self.conn.execute(
                 "SELECT COUNT(*) FROM memory.temp_table"
             ).fetchone()
@@ -130,12 +108,48 @@ class MotherDuckBigQueryLoader:
             logger.error(f"Error loading data from BigQuery: {e}")
             raise
 
+    def _validate_data(
+        self, timestamp_column: str, start_date: str, end_date: str
+    ):
+        """Run SQL-based data quality checks on the loaded data."""
+        stats = self.conn.execute(f"""
+            SELECT
+                COUNT(*) as total_rows,
+                COUNT({timestamp_column}) as non_null_timestamps,
+                COUNT(project) as non_null_projects,
+                MIN({timestamp_column}) as min_ts,
+                MAX({timestamp_column}) as max_ts
+            FROM memory.temp_table
+        """).fetchone()
+
+        total_rows, non_null_ts, non_null_proj, min_ts, max_ts = stats
+
+        if total_rows == 0:
+            raise DataQualityError("No rows loaded from BigQuery")
+
+        null_ts_pct = (total_rows - non_null_ts) / total_rows * 100
+        null_proj_pct = (total_rows - non_null_proj) / total_rows * 100
+
+        if null_ts_pct > 5:
+            raise DataQualityError(
+                f"{null_ts_pct:.1f}% of timestamp values are null (threshold: 5%)"
+            )
+        if null_proj_pct > 5:
+            raise DataQualityError(
+                f"{null_proj_pct:.1f}% of project values are null (threshold: 5%)"
+            )
+
+        logger.info(
+            f"Data quality OK: {total_rows:,} rows, "
+            f"timestamp range [{min_ts} to {max_ts}], "
+            f"null rates: timestamp={null_ts_pct:.1f}%, project={null_proj_pct:.1f}%"
+        )
+
     def _delete_existing_data(
         self, timestamp_column: str, start_date: str, end_date: str
     ):
-        """Delete existing data from MotherDuck in the specified date range"""
+        """Delete existing data from MotherDuck in the specified date range."""
         try:
-            # Check if table exists in MotherDuck
             table_exists = self.conn.execute(f"""
                 SELECT COUNT(*) > 0 
                 FROM duckdb_tables() 
@@ -145,18 +159,18 @@ class MotherDuckBigQueryLoader:
 
             if not table_exists:
                 logger.info(
-                    f"Table {self.motherduck_database}.main.{self.motherduck_table} does not exist. Skipping delete operation."
+                    f"Table {self.motherduck_database}.main.{self.motherduck_table} "
+                    f"does not exist. Skipping delete."
                 )
                 return
 
-            # Use database in MotherDuck
             delete_query = f"""
             DELETE FROM {self.motherduck_database}.main.{self.motherduck_table} 
             WHERE {timestamp_column} >= '{start_date}' AND {timestamp_column} < '{end_date}'
             """
             self.conn.execute(delete_query)
             logger.info(
-                f"Successfully deleted data for date range {start_date} to {end_date}"
+                f"Deleted existing data for range {start_date} to {end_date}"
             )
 
         except Exception as e:
@@ -164,32 +178,26 @@ class MotherDuckBigQueryLoader:
             raise
 
     def _copy_to_motherduck(self, chunk_size: int) -> int:
-        """Copy data from temporary table to MotherDuck in chunks for optimal performance"""
+        """Copy data from temp table to MotherDuck in chunks."""
         try:
-            # Ensure target table exists in MotherDuck with the same schema
             self.conn.execute(f"USE {self.motherduck_database}")
-            logger.info(
-                f"Creating table if not exists {self.motherduck_database}.main.{self.motherduck_table}"
-            )
             self.conn.execute(f"""
                 CREATE TABLE IF NOT EXISTS 
                     {self.motherduck_database}.main.{self.motherduck_table} AS 
-                SELECT * FROM memory.temp_table limit 0
+                SELECT * FROM memory.temp_table LIMIT 0
             """)
 
-            # Count total rows
             total_rows = self.conn.execute(
                 "SELECT COUNT(*) FROM memory.temp_table"
             ).fetchone()[0]
-            logger.info(f"Total rows to copy: {total_rows}")
+
             if total_rows == 0:
-                logger.info("No data to copy to MotherDuck")
                 return 0
 
-            # Copy data in chunks using rowid for efficient chunking
+            logger.info(f"Total rows to copy: {total_rows:,}")
+
             for chunk_start in range(0, total_rows, chunk_size):
                 chunk_end = min(chunk_start + chunk_size - 1, total_rows - 1)
-                logger.info(f"Copying chunk {chunk_start} to {chunk_end}")
                 self.conn.execute(f"""
                     INSERT INTO {self.motherduck_database}.main.{self.motherduck_table}
                     SELECT * FROM memory.temp_table 
@@ -199,7 +207,7 @@ class MotherDuckBigQueryLoader:
                 chunk_num = (chunk_start // chunk_size) + 1
                 total_chunks = (total_rows + chunk_size - 1) // chunk_size
                 logger.info(
-                    f"Copied chunk {chunk_num}/{total_chunks} ({chunk_end-chunk_start+1} rows)"
+                    f"Chunk {chunk_num}/{total_chunks} ({chunk_end - chunk_start + 1} rows)"
                 )
 
             return total_rows
