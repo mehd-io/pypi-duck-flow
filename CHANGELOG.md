@@ -1,9 +1,11 @@
 # Changelog
 
-## 2025-05-16
-- Rework `/ingestion` to use the DuckDB BigQuery extension instead of BigQuery Python API.
-- Bump DuckDB to `1.2.2`
-- Bump dbt-duckdb to `1.9.3`
+## 2026-03-11
+- Rework `/ingestion` to use the DuckDB BigQuery extension with `bigquery_scan` and filter pushdown for faster ingestion (replaces BigQuery Python API and `bigquery_query()`).
+- Add SQL-based data quality checks after BigQuery load (null rate thresholds on `timestamp` and `project` columns).
+- Bump DuckDB to `1.4.4`, dbt-duckdb to `1.10.1`.
+- Remove `db-dtypes`, `google-cloud-bigquery`, `google-auth`, `pyarrow` dependencies.
+- Clean up obsolete `s3_path` / `aws_profile` parameters from Makefile and GitHub Actions.
 
 ## 2025-02-09
 - Bumping DuckDB to `1.2.0`.
