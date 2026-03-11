@@ -1,10 +1,10 @@
 ARG PLATFORM=amd64
 
 # Stage 1: Base
-FROM --platform=linux/${PLATFORM} python:3.12 as base
+FROM --platform=linux/${PLATFORM} python:3.12 AS base
 
 # Install UV via pip
-RUN pip install uv==0.5.5 --no-cache-dir
+RUN pip install uv==0.10.9 --no-cache-dir
 
 # UV environment settings
 ENV UV_LINK_MODE=copy \
@@ -13,7 +13,7 @@ ENV UV_LINK_MODE=copy \
     UV_PYTHON=/usr/local/bin/python3.12
 
 # Stage : Development
-FROM base as development
+FROM base AS development
 # Set working directory
 WORKDIR /app
 
@@ -25,7 +25,7 @@ RUN --mount=type=cache,target=/root/.cache \
     uv sync --locked
 
 # Stage : Production
-FROM base as production
+FROM base AS production
 # Set working directory
 WORKDIR /app
 
