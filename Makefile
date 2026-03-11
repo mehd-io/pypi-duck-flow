@@ -6,6 +6,7 @@ DBT_FOLDER = transform/pypi_metrics/
 DBT_TARGET = dev
 DBT_DATA_SOURCE = motherduck
 DATABASE_NAME ?= duckdb_stats
+PLATFORM ?= amd64
 DOCKER ?= false
 DOCKER_CMD = 
 DOCKER_IMAGE ?= ghcr.io/$(REPOSITORY)
@@ -51,7 +52,7 @@ pypi-transform-test:
 
 ## Docker 
 build:
-	docker build --label org.opencontainers.image.source=https://github.com/$(GITHUB_REPOSITORY) -t $(DOCKER_IMAGE) --build-arg PLATFORM=arm64 .
+	docker build --label org.opencontainers.image.source=https://github.com/$(GITHUB_REPOSITORY) -t $(DOCKER_IMAGE) --build-arg PLATFORM=$(PLATFORM) .
 
 ## Development
 install: 
