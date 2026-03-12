@@ -1,5 +1,9 @@
 import { DuckDBInstance, DuckDBConnection } from "@duckdb/node-api";
 
+if (!process.env.HOME || process.env.HOME === "") {
+  process.env.HOME = "/tmp";
+}
+
 let connectionPromise: Promise<DuckDBConnection> | null = null;
 
 async function createConnection(): Promise<DuckDBConnection> {
@@ -12,7 +16,6 @@ async function createConnection(): Promise<DuckDBConnection> {
     motherduck_token: token,
   });
   const connection = await instance.connect();
-  await connection.run("SET home_directory = '/tmp'");
   await connection.run(
     "ATTACH IF NOT EXISTS 'md:duckdb_stats' AS duckdb_stats"
   );
