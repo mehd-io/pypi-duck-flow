@@ -1,0 +1,36 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
+{
+	"name": "Typescript - Python",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+
+	"features": {
+		// Python 3.13 with uv
+		"ghcr.io/devcontainers/features/python:1": {
+				"version": "3.13",
+				"installTools": true,
+				"toolsToInstall": "uv"
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {
+			"version": "1.1.0",
+			"installTools": true,
+			"toolsToInstall": "github-cli"
+		}
+	},
+	// Persist GitHub CLI auth across container rebuilds (log in once with: gh auth login)
+	"mounts": [
+		"source=gh-cli-config,target=/root/.config/gh,type=volume"
+	],
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "yarn install",
+
+	// Configure tool-specific properties.
+	// "customizations": {},
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	"remoteUser": "root"
+}

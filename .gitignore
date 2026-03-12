@@ -16,10 +16,9 @@ target/
 dbt_packages/
 logs/
 
-# Dashboard (evidence)
-**/.ddb
+# Dashboard (Next.js)
 **/node_modules
-**/.evidence
-
+**/.next
+dashboard/.env.local
 **/connection.options.yaml
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-03-12
+- **Changed**: Rewrite `/dashboard` from Evidence.dev (SQL + Markdown) to Next.js + TypeScript + Tailwind CSS + shadcn/ui.
+- New stack: Next.js App Router, Recharts via shadcn/ui chart components, `@duckdb/node-api` for MotherDuck connectivity.
+- KPI cards with sparklines and week/month trend indicators.
+- New daily downloads bar chart.
+- Time period filter (All time, 7d, 30d, 90d) for breakdown charts.
+- Version adoption area chart with absolute/% share toggle.
+- Dark/light mode support, system font stack.
+- MotherDuck share link copy-to-clipboard button in header.
+- Deployable on Vercel with `MOTHERDUCK_TOKEN` env var.
+
 ## 2026-03-11
 - Rework `/ingestion` to use the DuckDB BigQuery extension with `bigquery_scan` and filter pushdown for faster ingestion (replaces BigQuery Python API and `bigquery_query()`).
 - Add SQL-based data quality checks after BigQuery load (null rate thresholds on `timestamp` and `project` columns).
