@@ -10,6 +10,7 @@ async function createConnection(): Promise<DuckDBConnection> {
 
   const instance = await DuckDBInstance.create("md:", {
     motherduck_token: token,
+    home_directory: "/tmp",
   });
   const connection = await instance.connect();
   await connection.run(
