@@ -10,7 +10,6 @@ import { PythonBarChart } from "./python-bar-chart";
 import { CountryBarChart } from "./country-bar-chart";
 import { AdoptionAreaChart } from "./adoption-area-chart";
 import { DailyDownloadsChart } from "./daily-downloads-chart";
-import { PeriodSelector } from "./period-selector";
 
 function Skeleton({ className }: { className?: string }) {
   return (
@@ -59,13 +58,12 @@ export function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [periodDays, setPeriodDays] = useState(0);
 
-  const fetchData = useCallback(async (days: number) => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/stats?days=${days}`);
+      const res = await fetch(`/api/stats?days=0`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);
@@ -77,11 +75,11 @@ export function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetchData(periodDays);
-  }, [periodDays, fetchData]);
+    fetchData();
+  }, [fetchData]);
 
   if (loading && !data) return <LoadingSkeleton />;
-  if (error && !data) return <ErrorState message={error} onRetry={() => fetchData(periodDays)} />;
+  if (error && !data) return <ErrorState message={error} onRetry={fetchData} />;
   if (!data) return null;
 
   return (
@@ -103,13 +101,7 @@ export function Dashboard() {
         <MonthlyTable data={data.monthlyRecent} />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-base font-semibold tracking-tight">Breakdown</h2>
-        <PeriodSelector
-          value={periodDays}
-          onChange={(days) => setPeriodDays(days)}
-        />
-      </div>
+      <h2 className="text-base font-semibold tracking-tight">Breakdown</h2>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <DailyDownloadsChart data={data.dailyDownloads} periodDays={data.periodDays} />
