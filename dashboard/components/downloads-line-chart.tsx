@@ -91,17 +91,27 @@ export function DownloadsLineChart({ data }: DownloadsLineChartProps) {
             DuckDB Python package downloads aggregated by week
           </CardDescription>
         </div>
-        {isZoomed && (
+        {isZoomed ? (
           <button
             onClick={handleZoomOut}
             className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             Reset zoom
           </button>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="11" y1="8" x2="11" y2="14" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
+            Drag to zoom
+          </span>
         )}
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
+        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full cursor-crosshair">
           <AreaChart
             data={chartData}
             accessibilityLayer
@@ -159,11 +169,6 @@ export function DownloadsLineChart({ data }: DownloadsLineChartProps) {
             )}
           </AreaChart>
         </ChartContainer>
-        {!isZoomed && (
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            Drag on the chart to zoom in
-          </p>
-        )}
       </CardContent>
     </Card>
   );
