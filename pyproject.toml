@@ -6,7 +6,7 @@ authors = ["Mehdi Ouazza <mehdi@mehd.io>"]
 readme = "README.md"
 requires-python = "==3.12.*"
 dependencies = [
-    "duckdb==1.4.4",
+    "duckdb==1.5.1",
     "fire>=0.5.0,<1.0.0",
     "loguru>=0.7.2,<1.0.0",
     "pydantic>=2.7.4,<3.0.0",
