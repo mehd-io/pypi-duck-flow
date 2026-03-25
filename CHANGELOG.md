@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-03-25
+- Bump DuckDB to `1.5.1` (pyproject.toml + GitHub Actions setup-duckdb).
+- Upgrade GitHub Actions to Node.js 24-compatible versions: `actions/checkout@v6`, `google-github-actions/auth@v3`.
+
 ## 2026-03-12
 - **Changed**: Rewrite `/dashboard` from Evidence.dev (SQL + Markdown) to Next.js + TypeScript + Tailwind CSS + shadcn/ui.
 - New stack: Next.js App Router, Recharts via shadcn/ui chart components, `@duckdb/node-api` for MotherDuck connectivity.
