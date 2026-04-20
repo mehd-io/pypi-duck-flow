@@ -17,7 +17,7 @@ async function createConnection(): Promise<DuckDBConnection> {
   });
   const connection = await instance.connect();
   await connection.run(
-    "ATTACH IF NOT EXISTS 'md:duckdb_stats' AS duckdb_stats"
+    "ATTACH IF NOT EXISTS 'md:_share/duckdb_stats/1eb684bf-faff-4860-8e7d-92af4ff9a410' AS duckdb_stats"
   );
   return connection;
 }
