@@ -3,7 +3,7 @@
 This project is a collections of pipelines to get insights of your python project. It also serves as educational purpose (YouTube videos and blogs) to learn how to build data pipelines with **Python**, **SQL** & **DuckDB**.
 You can see the final result of the project in this live [dashboard](http://duckdbstats.com/).
 
-![demo](./docs/demo_dashboard.gif)
+![demo](./docs/demo_dashboard.png)
 
 The project is a monorepo composed of series in 3 parts :
 - Ingestion, under `ingestion` folder ([YouTube video](https://youtu.be/3pLKTmdWDXk?si=ZI9fjoGQ7hHzznOZ), [Blog](https://motherduck.com/blog/duckdb-python-e2e-data-engineering-project-part-1/))
@@ -16,47 +16,75 @@ The project is a monorepo composed of series in 3 parts :
 You can also refer to the [`CHANGELOG.md`](./CHANGELOG.md) for a complete list of updates.
 
 ## High level architecture
-![High level architecture](./docs/etl_architecture.png)
+
+```mermaid
+flowchart LR
+    subgraph SRC["SOURCE"]
+        PYPI[("PyPI<br/>public dataset")]
+        BQ[("BigQuery")]
+        PYPI --> BQ
+    end
+
+    subgraph EXTRACT["EXTRACT — ingestion/"]
+        ING["Python + DuckDB<br/>bigquery_scan<br/>(filter pushdown)"]
+    end
+
+    subgraph TRANSFORM["TRANSFORM — transform/"]
+        DBT["dbt + DuckDB<br/>(SQL models)"]
+    end
+
+    subgraph STORE["STORAGE"]
+        MD[("MotherDuck")]
+        S3[("AWS S3<br/>(optional)")]
+    end
+
+    subgraph LOAD["LOAD — dashboard/"]
+        NEXT["Next.js + TypeScript<br/>Tailwind + shadcn/ui<br/>Recharts · @duckdb/node-api"]
+    end
+
+    BQ ==> ING ==> MD
+    MD ==> DBT
+    DBT ==> MD
+    DBT -.-> S3
+    MD ==> NEXT
+```
 
 ## Development
 
 ### Setup
 
 The project requires :
-* Python 3.11
+* Python 3.12
 * uv for python packages.
-* Nodejs (only for the visualization part)
+* Node.js (only for the visualization part)
 
 There's also two [devcontainers](https://code.visualstudio.com/docs/devcontainers/containers) definitions for VSCode : one for Python, and one for NodeJS.
 Finally a `Makefile` is available to run common tasks.
 
 ### Env & credentials
 
-A `.env` file is required to run the project. You can copy the `.env.example` file and fill the required values.
+A `.env` file is required to run the project. You can copy `env.template` and fill the required values.
 ```
-DATABASE_NAME=duckdb_stats # duckdb database name
-TABLE_NAME=pypi_file_downloads # output table name
-S3_PATH=s3://my-s3-bucket # output s3 path
-AWS_PROFILE=default # aws profile to use
-GCP_PROJECT=my-gcp-project # GCP project to use
+DATABASE_NAME=duckdb_stats # MotherDuck database name
+GCP_PROJECT=my-gcp-project # GCP project used as the billing project for bigquery_scan
 START_DATE=2023-04-01 # start date of the data to ingest
 END_DATE=2023-04-03 # end date of the data to ingest
 PYPI_PROJECT=duckdb # pypi project to ingest
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/my/creds # path to GCP credentials
-motherduck_token=123123 # MotherDuck token
-TIMESTAMP_COLUMN=timestamp # timestamp column name, use for partitions on S#
-DESTINATION=local # destinations to push data to local will be local duckdb, md motherduck or s3 for s3.
-TRANSFORM_S3_PATH_INPUT=s3://my-input-bucket/pypi_file_downloads/*/*/*.parquet # For transform pipeline, input source data
-TRANSFORM_S3_PATH_OUTPUT=s3://my-output-bucket/ # For transform pipeline, output source if putting data to s3
+motherduck_token=123123 # MotherDuck token (required)
+TIMESTAMP_COLUMN=timestamp # timestamp column name
+TRANSFORM_S3_PATH_OUTPUT=s3://my-output-bucket/ # optional: dbt export target on S3
+AWS_PROFILE=default # only used by the `aws-sso-creds` helper
 ```
 
 ## Ingestion
 
+The pipeline reads from the public PyPI BigQuery dataset using the DuckDB [BigQuery community extension](https://duckdb.org/community_extensions/extensions/bigquery.html) (`bigquery_scan` with filter pushdown via the Storage Read API) and writes directly to MotherDuck. SQL-based data quality checks (null-rate thresholds on `timestamp` and `project`) run after each load.
+
 ### Requirements
 
-- [GCP account](https://console.cloud.google.com/)
-- OPTIONAL: AWS S3 bucket (optional to push data to S3) and AWS credentials (at the default `~/.aws/credentials` path) that has write access to the bucket
-- OPTIONAL: [MotherDuck account](https://app.motherduck.com/) (optional to push data to MotherDuck)
+- [GCP account](https://console.cloud.google.com/) with access to the `bigquery-public-data.pypi` dataset (used as the billing project)
+- [MotherDuck account](https://app.motherduck.com/) and token
 
 ### Run
 Once you fill your `.env` file, do the following :
@@ -67,43 +95,33 @@ Once you fill your `.env` file, do the following :
 
 ## Transformation
 
+The transform layer is a dbt project (`dbt-duckdb`) that reads the raw `pypi_file_downloads` table produced by the ingestion step and builds the downstream models consumed by the dashboard.
+
 ### Requirements
-You can choose to push the data of the transform pipeline either to AWS S3 or to MotherDuck. Both pipelines rely on source data storing on AWS S3 (see Ingestion section for more details). You can use a public sample dataset for this part of the tutorial, which is located at `s3://us-prd-motherduck-open-datasets/pypi/sample_tutorial/pypi_file_downloads/*/*/*.parquet` 
-For AWS S3, you would need : 
-- [AWS S3 bucket](https://aws.amazon.com/s3/) 
-- AWS credentials (at the default `~/.aws/credentials` path) that has read access to the bucket source bucket and write to the destination bucket
-For MotherDuck, you would need: 
-- [MotherDuck account](https://app.motherduck.com/) 
-- AWS IAM user account with read/write access to the source AWS S3 bucket and write access to the destination AWS S3 bucket
+- [MotherDuck account](https://app.motherduck.com/) and token — default source (`DBT_DATA_SOURCE=motherduck`) and dbt `prod` target.
+- The dbt `dev` target writes to a local DuckDB file at `/tmp/dbt.duckdb` — no MotherDuck connection needed for local iteration on transformed models.
+- Optional: an S3 bucket if you want dbt to also export partitioned parquet via `TRANSFORM_S3_PATH_OUTPUT` (the `external_source` data source). For the tutorial flow, a public sample is available at `s3://us-prd-motherduck-open-datasets/pypi/sample_tutorial/pypi_file_downloads/*/*/*.parquet`.
 
 ### Run
-Fill your `.env` file with the following variables. Note that you can use the TRANSFORM_S3_PATH_INPUT value here below for the tutorial, it's a public bucket containing some sample data: 
-```
-motherduck_token=123123 
-TRANSFORM_S3_PATH_INPUT=s3://us-prd-motherduck-open-datasets/pypi/sample_tutorial/pypi_file_downloads/*/*/*.parquet 
-TRANSFORM_S3_PATH_OUTPUT=s3://my-output-bucket/ 
-```
-You can then run the following commands :
-* `make install` : to install the dependencies
-* `make pypi-transform START_DATE=2023-04-05 END_DATE=2023-04-07 DBT_TARGET=dev` : example of a run reading from AWS S3 and writing to AWS S3
-* `make pypi-transform START_DATE=2023-04-05 END_DATE=2023-04-07 DBT_TARGET=prod` : example of a run reading from AWS S3 and writing to MotherDuck
-* `make pypi-transform-test` : run the unit tests located in `/transform/pypi_metrics/tests`
+Make sure `motherduck_token` is set in your `.env`, then:
+* `make install` : install the dependencies
+* `make pypi-transform START_DATE=2023-04-05 END_DATE=2023-04-07 DBT_TARGET=dev` : run dbt against the local DuckDB file
+* `make pypi-transform START_DATE=2023-04-05 END_DATE=2023-04-07 DBT_TARGET=prod` : run dbt against MotherDuck
+* `make pypi-transform-test` : run the dbt tests under `/transform/pypi_metrics/tests`
 
 ## Visualization - Dashboard
 
-The visualization part is using [Evidence framework](https://evidence.dev/) to create a dashboard. 
-It's a NodeJS project that uses the data from the transformation pipeline, stored on [MotherDuck](https://app.motherduck.com/).
-You can also use the available MotherDuck [shared database](https://motherduck.com/docs/key-tasks/sharing-data/) (including data from `duckdb` pypi project)
+The dashboard is a [Next.js](https://nextjs.org/) (App Router) app written in TypeScript, styled with [Tailwind CSS](https://tailwindcss.com/) and [shadcn/ui](https://ui.shadcn.com/), and rendering charts with [Recharts](https://recharts.org/). It queries [MotherDuck](https://app.motherduck.com/) directly from the server via [`@duckdb/node-api`](https://www.npmjs.com/package/@duckdb/node-api), reading the transformed data produced by the dbt pipeline. It is deployable on Vercel.
 
 ### Accessing the shared MotherDuck database
-To access the dataset, you only need to create a free account on [MotherDuck](https://app.motherduck.com/), and then you can access the shared database by using the following `ATTACH` url, to be run in your DuckDB client (Python, CLI, etc.):
+You can use the public MotherDuck [shared database](https://motherduck.com/docs/key-tasks/sharing-data/) (data for the `duckdb` pypi project). Create a free [MotherDuck](https://app.motherduck.com/) account and run the following `ATTACH` in your DuckDB client (Python, CLI, etc.):
 
 ```
-ATTACH 'md:_share/duckdb_stats/507a3c5f-e611-4899-b858-043ce733b57c'
+ATTACH 'md:_share/duckdb_stats/1eb684bf-faff-4860-8e7d-92af4ff9a410'
 ```
 
 ### Running the dashboard
-To run the dashboard, you need to have NodeJS installed on your machine.
-You can then : 
-- Install the dependencies by running `npm install` in the `dashboard` folder.
-- Run a local server by running `npm run dev` in the `dashboard` folder.
+You need Node.js installed. In the `dashboard` folder:
+- Set `MOTHERDUCK_TOKEN` in your environment (the server uses it to connect to MotherDuck).
+- `npm install` to install dependencies.
+- `npm run dev` to start the local dev server on http://localhost:3000.
