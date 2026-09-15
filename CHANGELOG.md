@@ -6,6 +6,7 @@
 - Add a dashboard-wide "Comparable download history" switch, enabled by default, with methodology guidance and a link to the [official PyPI announcement](https://blog.pypi.org/posts/2026-08-31-download-counts/).
 - Add an isolated MotherDuck preview target that rebuilds transformed data from the public share without repeating the BigQuery ingestion.
 - Make the dashboard MotherDuck database configurable with `MOTHERDUCK_DATABASE_PATH`.
+- Add a manual GitHub Actions full-refresh option for safely rebuilding the complete comparable-history model and publishing the refreshed MotherDuck share.
 
 ## 2026-03-25
 - Bump DuckDB to `1.5.1` (pyproject.toml + GitHub Actions setup-duckdb).

@@ -122,6 +122,8 @@ To view that model in the local dashboard, set `MOTHERDUCK_DATABASE_PATH=duckdb_
 
 For production rollout, rebuild `pypi_daily_stats` with `--full-refresh` across the complete raw-data range before deploying the dashboard or updating its public MotherDuck share. A normal incremental run cannot safely introduce the second metric column or remove aggregates left behind by the previous definition.
 
+The **PyPI Data Pipeline** GitHub Action provides this as a manual **Full refresh** option. Choose `transform`, enter the earliest available raw date and the day after the latest raw date, then enable **Full refresh**. This skips ingestion, rebuilds the transformed table from the existing MotherDuck raw data, and updates the MotherDuck share after the transform succeeds. Scheduled and ordinary manual runs remain incremental.
+
 ## Visualization - Dashboard
 
 The dashboard is a [Next.js](https://nextjs.org/) (App Router) app written in TypeScript, styled with [Tailwind CSS](https://tailwindcss.com/) and [shadcn/ui](https://ui.shadcn.com/), and rendering charts with [Recharts](https://recharts.org/). It queries [MotherDuck](https://app.motherduck.com/) directly from the server via [`@duckdb/node-api`](https://www.npmjs.com/package/@duckdb/node-api), reading the transformed data produced by the dbt pipeline. It is deployable on Vercel.
