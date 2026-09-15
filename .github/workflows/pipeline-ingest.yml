@@ -167,7 +167,7 @@ jobs:
   update-motherduck-share:
     needs: transform-pypi-data
     runs-on: ubuntu-latest
-    if: needs.transform-pypi-data.result == 'success' || needs.transform-pypi-data.result == 'skipped'
+    if: always() && (needs.transform-pypi-data.result == 'success' || needs.transform-pypi-data.result == 'skipped')
     steps:
       - name: Setup DuckDB
         uses: opt-nc/setup-duckdb-action@v1.0.10
