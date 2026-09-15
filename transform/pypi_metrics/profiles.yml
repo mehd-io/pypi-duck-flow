@@ -8,4 +8,11 @@ pypi_metrics:
       type: duckdb
       path: "md:{{ var('database_name', 'duckdb_stats') }}"
       threads: 1
+    preview:
+      type: duckdb
+      path: "md:{{ var('database_name', 'duckdb_stats_preview') }}"
+      attach:
+        - path: "{{ env_var('DBT_SOURCE_DATABASE_PATH', 'md:_share/duckdb_stats/1eb684bf-faff-4860-8e7d-92af4ff9a410') }}"
+          alias: pypi_source
+      threads: 1
   target: dev

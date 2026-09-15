@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-15
+- **Changed**: Recalculate the complete PyPI history using distribution artifacts (`.whl`, `.tar.gz`, and `.zip`) so counts remain comparable across PyPI's August 24, 2026 logging change.
+- Preserve the broader pre-change definition as `legacy_daily_download_sum` for transparent comparison.
+- Add a dashboard-wide "Comparable download history" switch, enabled by default, with methodology guidance and a link to the [official PyPI announcement](https://blog.pypi.org/posts/2026-08-31-download-counts/).
+- Add an isolated MotherDuck preview target that rebuilds transformed data from the public share without repeating the BigQuery ingestion.
+- Make the dashboard MotherDuck database configurable with `MOTHERDUCK_DATABASE_PATH`.
+
 ## 2026-03-25
 - Bump DuckDB to `1.5.1` (pyproject.toml + GitHub Actions setup-duckdb).
 - Upgrade GitHub Actions to Node.js 24-compatible versions: `actions/checkout@v6`, `google-github-actions/auth@v3`.

@@ -1,3 +1,5 @@
+export type MetricMode = "artifact" | "legacy";
+
 export interface WeeklyDownload {
   week_start_date: string;
   weekly_downloads: number;
@@ -57,4 +59,5 @@ export interface DashboardData {
   versionAdoption: VersionAdoption[];
   dailyDownloads: DailyDownload[];
   periodDays: number;
+  metricMode: MetricMode;
 }

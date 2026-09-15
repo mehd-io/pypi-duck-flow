@@ -6,6 +6,10 @@ DBT_FOLDER = transform/pypi_metrics/
 DBT_TARGET = dev
 DBT_DATA_SOURCE = motherduck
 DATABASE_NAME ?= duckdb_stats
+SOURCE_DATABASE_NAME ?= $(DATABASE_NAME)
+PREVIEW_DATABASE_NAME ?= duckdb_stats_preview
+PREVIEW_START_DATE ?= 2019-05-08
+PREVIEW_END_DATE ?= 2026-09-14
 PLATFORM ?= amd64
 DOCKER ?= false
 DOCKER_CMD = 
@@ -20,7 +24,7 @@ ifeq ($(DOCKER),true)
         $(DOCKER_IMAGE)
 endif
 
-.PHONY : help pypi-ingest format test aws-sso-creds pypi-transform 
+.PHONY : help pypi-ingest format test aws-sso-creds pypi-transform pypi-transform-preview
 
 pypi-ingest: 
 	$(DOCKER_CMD) uv run python3 -m ingestion.pipeline \
@@ -40,7 +44,15 @@ pypi-transform:
 		--target $$DBT_TARGET \
 		--project-dir $$DBT_FOLDER \
 		--profiles-dir $$DBT_FOLDER \
-		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)", "data_source": "$(DBT_DATA_SOURCE)", "database_name": "$(DATABASE_NAME)"}'
+		--vars '{"start_date": "$(START_DATE)", "end_date": "$(END_DATE)", "data_source": "$(DBT_DATA_SOURCE)", "database_name": "$(DATABASE_NAME)", "source_database_name": "$(SOURCE_DATABASE_NAME)"}'
+
+pypi-transform-preview:
+	$(MAKE) pypi-transform \
+		DBT_TARGET=preview \
+		DATABASE_NAME=$(PREVIEW_DATABASE_NAME) \
+		SOURCE_DATABASE_NAME=pypi_source \
+		START_DATE=$(PREVIEW_START_DATE) \
+		END_DATE=$(PREVIEW_END_DATE)
 
 # Note : start_date and end_date depends on the mock data in the test
 pypi-transform-test:

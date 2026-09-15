@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCompact, formatPercent, formatDate } from "@/lib/format";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import type { WeeklyDownload, MonthlyDownload } from "@/lib/types";
+import type { WeeklyDownload, MonthlyDownload, MetricMode } from "@/lib/types";
 import {
   Area,
   AreaChart,
@@ -85,6 +85,7 @@ interface KpiCardsProps {
   totalDownloads: number;
   refreshDate: string;
   weeklyTimeSeries?: WeeklyDownload[];
+  metricMode: MetricMode;
 }
 
 export function KpiCards({
@@ -95,6 +96,7 @@ export function KpiCards({
   totalDownloads,
   refreshDate,
   weeklyTimeSeries,
+  metricMode,
 }: KpiCardsProps) {
   const weekChange =
     lastWeek && previousWeek
@@ -131,7 +133,7 @@ export function KpiCards({
           sparkColor="var(--chart-2)"
         />
         <KpiCard
-          title="All-Time Downloads"
+          title={metricMode === "legacy" ? "All-Time Object Requests" : "All-Time Artifact Downloads"}
           value={formatCompact(totalDownloads)}
           sparkData={recentSpark}
           sparkColor="var(--chart-3)"

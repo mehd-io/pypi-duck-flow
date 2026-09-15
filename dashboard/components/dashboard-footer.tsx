@@ -28,6 +28,20 @@ export function DashboardFooter() {
           </div>
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">
+          Comparable downloads count PyPI distribution artifacts (
+          <code>.whl</code>, <code>.tar.gz</code>, and <code>.zip</code>) across the full history;
+          the legacy view includes all package-object requests. See the{" "}
+          <a
+            href="https://blog.pypi.org/posts/2026-08-31-download-counts/"
+            className="underline hover:text-foreground"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            PyPI methodology update
+          </a>
+          .
+        </p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
           Made with ❤️ by{" "}
           <a
             href="https://www.linkedin.com/in/mehd-io/"

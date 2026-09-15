@@ -12,14 +12,17 @@ async function createConnection(): Promise<DuckDBConnection> {
     throw new Error("MOTHERDUCK_TOKEN environment variable is not set");
   }
 
-  const instance = await DuckDBInstance.create("md:", {
+  const databasePath =
+    process.env.MOTHERDUCK_DATABASE_PATH ??
+    "_share/duckdb_stats/1eb684bf-faff-4860-8e7d-92af4ff9a410";
+  if (!/^[A-Za-z0-9_/-]+$/.test(databasePath)) {
+    throw new Error("MOTHERDUCK_DATABASE_PATH contains invalid characters");
+  }
+
+  const instance = await DuckDBInstance.create(`md:${databasePath}`, {
     motherduck_token: token,
   });
-  const connection = await instance.connect();
-  await connection.run(
-    "ATTACH IF NOT EXISTS 'md:_share/duckdb_stats/1eb684bf-faff-4860-8e7d-92af4ff9a410' AS duckdb_stats"
-  );
-  return connection;
+  return instance.connect();
 }
 
 export async function getConnection(): Promise<DuckDBConnection> {
