@@ -10,6 +10,7 @@ SOURCE_DATABASE_NAME ?= $(DATABASE_NAME)
 PREVIEW_DATABASE_NAME ?= duckdb_stats_preview
 PREVIEW_START_DATE ?= 2019-05-08
 PREVIEW_END_DATE ?= 2026-09-14
+DBT_FULL_REFRESH ?=
 PLATFORM ?= amd64
 DOCKER ?= false
 DOCKER_CMD = 
@@ -41,6 +42,7 @@ pypi-ingest-test:
 
 pypi-transform:
 	$(DOCKER_CMD) uv run dbt run \
+		$(DBT_FULL_REFRESH) \
 		--target $$DBT_TARGET \
 		--project-dir $$DBT_FOLDER \
 		--profiles-dir $$DBT_FOLDER \

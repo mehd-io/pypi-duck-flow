@@ -29,6 +29,11 @@ on:
         description: 'End Date'
         required: false
         default: ''
+      full_refresh:
+        description: 'Rebuild the dbt model from the supplied date range (transform runs only)'
+        required: false
+        default: false
+        type: boolean
   schedule:
     - cron: '0 0 * * *' 
     
@@ -41,6 +46,7 @@ jobs:
       run_ingest: ${{ steps.set-flags.outputs.run_ingest }}
       run_transform: ${{ steps.set-flags.outputs.run_transform }}
       run_update: ${{ steps.set-flags.outputs.run_update }}
+      dbt_full_refresh: ${{ steps.set-flags.outputs.dbt_full_refresh }}
     steps:
       - name: Calculate Dates
         id: dates
@@ -57,7 +63,17 @@ jobs:
       - name: Set job flags
         id: set-flags
         run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ github.event.inputs.job_type }}" == "all" ]]; then
+          if [[ "${{ github.event.inputs.full_refresh }}" == "true" ]]; then
+            echo "dbt_full_refresh=--full-refresh" >> $GITHUB_OUTPUT
+          else
+            echo "dbt_full_refresh=" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ "${{ github.event.inputs.full_refresh }}" == "true" ]]; then
+            echo "run_ingest=false" >> $GITHUB_OUTPUT
+            echo "run_transform=true" >> $GITHUB_OUTPUT
+            echo "run_update=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ github.event.inputs.job_type }}" == "all" ]]; then
             echo "run_ingest=true" >> $GITHUB_OUTPUT
             echo "run_transform=true" >> $GITHUB_OUTPUT
             echo "run_update=true" >> $GITHUB_OUTPUT
@@ -141,11 +157,12 @@ jobs:
           END_DATE: ${{ needs.setup.outputs.end_date }}
           DATABASE_NAME: ${{ github.event.inputs.database_name || 'duckdb_stats' }}
           DBT_TARGET: prod
+          DBT_FULL_REFRESH: ${{ needs.setup.outputs.dbt_full_refresh }}
           DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
           motherduck_token: ${{ secrets.MOTHERDUCK_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
         run: |
-          make pypi-transform DOCKER=true DBT_TARGET=${DBT_TARGET}
+          make pypi-transform DOCKER=true DBT_TARGET=${DBT_TARGET} DBT_FULL_REFRESH="${DBT_FULL_REFRESH}"
 
   update-motherduck-share:
     needs: transform-pypi-data
@@ -163,4 +180,3 @@ jobs:
           DATABASE_NAME: ${{ github.event.inputs.database_name || 'duckdb_stats' }} 
         run: |
           echo "ATTACH 'md:';" >> ~/.duckdbrc && duckdb -c "UPDATE SHARE $DATABASE_NAME;"
-
