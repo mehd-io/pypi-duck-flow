@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { DashboardData } from "@/lib/types";
+import type { DashboardData, MetricMode } from "@/lib/types";
 import { KpiCards } from "./kpi-cards";
 import { DownloadsLineChart } from "./downloads-line-chart";
 import { MonthlyTable } from "./monthly-table";
@@ -10,6 +10,7 @@ import { PythonBarChart } from "./python-bar-chart";
 import { CountryBarChart } from "./country-bar-chart";
 import { AdoptionAreaChart } from "./adoption-area-chart";
 import { DailyDownloadsChart } from "./daily-downloads-chart";
+import { MetricSelector } from "./metric-selector";
 
 function Skeleton({ className }: { className?: string }) {
   return (
@@ -58,12 +59,13 @@ export function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [metric, setMetric] = useState<MetricMode>("artifact");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/stats?days=0`);
+      const res = await fetch(`/api/stats?days=0&metric=${metric}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setData(json);
@@ -72,7 +74,7 @@ export function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [metric]);
 
   useEffect(() => {
     fetchData();
@@ -84,36 +86,41 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <KpiCards
-        lastWeek={data.lastWeekDownloads}
-        previousWeek={data.previousWeekDownloads}
-        lastMonth={data.lastMonthDownloads}
-        previousMonth={data.previousMonthDownloads}
-        totalDownloads={data.totalDownloads}
-        refreshDate={data.refreshDate}
-        weeklyTimeSeries={data.weeklyTimeSeries}
-      />
+      <MetricSelector value={metric} loading={loading} onChange={setMetric} />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <DownloadsLineChart data={data.weeklyTimeSeries} />
+      <div key={data.metricMode} className="space-y-6">
+        <KpiCards
+          lastWeek={data.lastWeekDownloads}
+          previousWeek={data.previousWeekDownloads}
+          lastMonth={data.lastMonthDownloads}
+          previousMonth={data.previousMonthDownloads}
+          totalDownloads={data.totalDownloads}
+          refreshDate={data.refreshDate}
+          weeklyTimeSeries={data.weeklyTimeSeries}
+          metricMode={data.metricMode}
+        />
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <DownloadsLineChart data={data.weeklyTimeSeries} />
+          </div>
+          <MonthlyTable data={data.monthlyRecent} />
         </div>
-        <MonthlyTable data={data.monthlyRecent} />
+
+        <h2 className="text-base font-semibold tracking-tight">Breakdown</h2>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <DailyDownloadsChart data={data.dailyDownloads} periodDays={data.periodDays} />
+          <CountryBarChart data={data.topCountries} periodDays={data.periodDays} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <VersionBarChart data={data.duckdbVersions} periodDays={data.periodDays} />
+          <PythonBarChart data={data.pythonVersions} periodDays={data.periodDays} />
+        </div>
+
+        <AdoptionAreaChart data={data.versionAdoption} />
       </div>
-
-      <h2 className="text-base font-semibold tracking-tight">Breakdown</h2>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <DailyDownloadsChart data={data.dailyDownloads} periodDays={data.periodDays} />
-        <CountryBarChart data={data.topCountries} periodDays={data.periodDays} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <VersionBarChart data={data.duckdbVersions} periodDays={data.periodDays} />
-        <PythonBarChart data={data.pythonVersions} periodDays={data.periodDays} />
-      </div>
-
-      <AdoptionAreaChart data={data.versionAdoption} />
     </div>
   );
 }

@@ -72,6 +72,7 @@ END_DATE=2023-04-03 # end date of the data to ingest
 PYPI_PROJECT=duckdb # pypi project to ingest
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/my/creds # path to GCP credentials
 motherduck_token=123123 # MotherDuck token (required)
+MOTHERDUCK_DATABASE_PATH=_share/duckdb_stats/1eb684bf-faff-4860-8e7d-92af4ff9a410 # dashboard database or share path
 TIMESTAMP_COLUMN=timestamp # timestamp column name
 TRANSFORM_S3_PATH_OUTPUT=s3://my-output-bucket/ # optional: dbt export target on S3
 AWS_PROFILE=default # only used by the `aws-sso-creds` helper
@@ -108,6 +109,18 @@ Make sure `motherduck_token` is set in your `.env`, then:
 * `make pypi-transform START_DATE=2023-04-05 END_DATE=2023-04-07 DBT_TARGET=dev` : run dbt against the local DuckDB file
 * `make pypi-transform START_DATE=2023-04-05 END_DATE=2023-04-07 DBT_TARGET=prod` : run dbt against MotherDuck
 * `make pypi-transform-test` : run the dbt tests under `/transform/pypi_metrics/tests`
+
+### Preview corrected PyPI download counts
+
+On August 24, 2026, PyPI changed its download-log configuration so that only requests for distribution artifacts ending in `.whl`, `.tar.gz`, or `.zip` are recorded. Earlier data also includes metadata sidecars and other package objects, and PyPI did not rewrite those historical rows. See [Metadata requests no longer tracked in PyPI download counts](https://blog.pypi.org/posts/2026-08-31-download-counts/) on the official PyPI blog for the source and full rationale.
+
+This project applies PyPI's artifact rule to every available historical date rather than scaling or estimating newer values. The transformed model retains both definitions: `daily_download_sum` is the comparable artifact-only metric used by default, while `legacy_daily_download_sum` counts every package-object request present in the source. The dashboard's "Comparable download history" switch changes every KPI, chart, table, and breakdown between these definitions; its information popover also links directly to the PyPI post.
+
+To build the corrected history without re-ingesting BigQuery data, create an empty preview database once with `uv run python -c "import duckdb; duckdb.connect('md:').execute('CREATE DATABASE IF NOT EXISTS duckdb_stats_preview')"`, then run `make pypi-transform-preview`. The preview target reads `pypi_file_downloads` from the public MotherDuck share and writes the transformed model to `duckdb_stats_preview` in your MotherDuck account.
+
+To view that model in the local dashboard, set `MOTHERDUCK_DATABASE_PATH=duckdb_stats_preview` and `MOTHERDUCK_TOKEN`, then start the dashboard with `npm run dev`.
+
+For production rollout, rebuild `pypi_daily_stats` with `--full-refresh` across the complete raw-data range before deploying the dashboard or updating its public MotherDuck share. A normal incremental run cannot safely introduce the second metric column or remove aggregates left behind by the previous definition.
 
 ## Visualization - Dashboard
 

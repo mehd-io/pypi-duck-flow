@@ -2,4 +2,9 @@ version: 2
 
 models:
   - name: pypi_daily_stats
-    description: "Daily downloads of a package from PyPI"
+    description: "Daily PyPI request metrics with comparable distribution artifact downloads and the broader legacy object-request count"
+    columns:
+      - name: daily_download_sum
+        description: "Requests for distribution artifacts ending in .whl, .tar.gz, or .zip"
+      - name: legacy_daily_download_sum
+        description: "All package-object requests, matching PyPI's historical counting definition before August 24, 2026"

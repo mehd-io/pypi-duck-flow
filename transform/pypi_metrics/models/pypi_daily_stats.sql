@@ -9,6 +9,11 @@ WITH pre_aggregated_data AS (
         project,
         country_code,
         details.cpu,
+        REGEXP_MATCHES(
+            file.filename,
+            '\.(whl|tar\.gz|zip)$',
+            'i'
+        ) AS is_distribution_artifact,
         CASE
             WHEN details.python IS NULL THEN NULL
             ELSE CONCAT(
@@ -19,7 +24,7 @@ WITH pre_aggregated_data AS (
         END AS python_version
     FROM
         {{ dbt_unit_testing.source(
-            'external_source' if var('data_source') == 'external_source' else database_name,
+            'external_source' if var('data_source') == 'external_source' else 'pypi_source',
             'pypi_file_downloads'
         )}}
     WHERE
@@ -37,7 +42,8 @@ SELECT
     country_code,
     cpu,
     python_version,
-    COUNT(*) AS daily_download_sum
+    COUNT(*) FILTER (WHERE is_distribution_artifact) AS daily_download_sum,
+    COUNT(*) AS legacy_daily_download_sum
 FROM
     pre_aggregated_data
 GROUP BY
