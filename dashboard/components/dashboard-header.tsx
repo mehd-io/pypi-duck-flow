@@ -20,7 +20,8 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <Image src="/duckdb-mark.svg" alt="DuckDB" width={32} height={32} />
+          <Image src="/duckdb-mark.svg" alt="DuckDB" width={32} height={32} className="dark:hidden" />
+          <Image src="/duckdb-mark-dark.svg" alt="DuckDB" width={32} height={32} className="hidden dark:block" />
           <h1 className="text-lg tracking-tight">
             <span className="font-bold">DuckDB</span>
             <span className="font-normal text-muted-foreground"> Stats</span>
